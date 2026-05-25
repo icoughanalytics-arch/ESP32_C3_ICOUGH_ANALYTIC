@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "inmp441_module.h"
+#include "audio_test_module.h"
 
 void setup() {
     Serial.begin(115200);
@@ -10,8 +11,13 @@ void setup() {
         Serial.println("[FATAL] Mic init failed. Halting.");
         while (true) { delay(1000); }
     }
+
+    if (!audio_upload_test_init()) {
+        Serial.println("[FATAL] Audio test init failed. Halting.");
+        while (true) { delay(1000); }
+    }
 }
 
 void loop() {
-    mic_test_loop();
+    audio_upload_test_loop();
 }

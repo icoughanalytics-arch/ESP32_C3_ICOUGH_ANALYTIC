@@ -1,7 +1,11 @@
 .pio/
+firmware/.pio/
 .pioenvs/
 .piolibdeps/
 .vscode/
+server/.venv/
+server/uploads/*
+!server/uploads/.gitkeep
 *.bin
 *.hex
 *.elf

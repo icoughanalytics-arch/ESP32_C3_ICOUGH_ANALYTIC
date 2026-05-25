@@ -26,6 +26,7 @@
 
 bool  mic_init();
 bool  mic_read(int32_t* buf, size_t num_samples, size_t* out_samples_read);
+void  mic_convert_to_pcm16(const int32_t* in_buf, int16_t* out_buf, size_t num_samples);
 float mic_calc_rms(const int32_t* buf, size_t num_samples);
 float mic_calc_db(float rms);
 void  mic_test_loop();

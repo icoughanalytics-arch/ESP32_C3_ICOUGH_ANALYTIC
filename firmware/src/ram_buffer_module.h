@@ -10,3 +10,4 @@ bool ram_buffer_init();
 void ram_buffer_write(const uint8_t* data, size_t size);
 void ram_buffer_clear();
 size_t ram_buffer_get_data(uint8_t* out_buf, size_t max_size);
+size_t ram_buffer_size();

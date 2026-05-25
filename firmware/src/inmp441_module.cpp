@@ -59,6 +59,16 @@ bool mic_read(int32_t* buf, size_t num_samples, size_t* out_samples_read) {
 // คำนวณ RMS จาก raw 32-bit I2S samples
 // INMP441 ส่งข้อมูล 18-bit ชิดซ้าย (MSB) ของ 32-bit word
 // shift right 14 เพื่อให้ได้ค่า 18-bit signed
+void mic_convert_to_pcm16(const int32_t* in_buf, int16_t* out_buf, size_t num_samples) {
+    for (size_t i = 0; i < num_samples; i++) {
+        int32_t sample18 = in_buf[i] >> 14;
+        int32_t sample16 = sample18 >> 2;
+        if (sample16 > 32767) sample16 = 32767;
+        if (sample16 < -32768) sample16 = -32768;
+        out_buf[i] = (int16_t)sample16;
+    }
+}
+
 float mic_calc_rms(const int32_t* buf, size_t num_samples) {
     if (num_samples == 0) return 0.0f;
     double sum = 0.0;
