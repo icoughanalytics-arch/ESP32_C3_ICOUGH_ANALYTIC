@@ -1,0 +1,556 @@
+{
+  "labels": [
+    "bronchitis",
+    "pneumonia"
+  ],
+  "files": 173,
+  "train_files": 139,
+  "val_files": 34,
+  "best_val_balanced_accuracy": 0.53125,
+  "final_val": {
+    "loss": 0.9183056652545929,
+    "accuracy": 0.5588235294117647,
+    "balanced_accuracy": 0.53125,
+    "recall_by_class": {
+      "bronchitis": 1.0,
+      "pneumonia": 0.0625
+    },
+    "confusion_matrix": [
+      [
+        18,
+        0
+      ],
+      [
+        15,
+        1
+      ]
+    ]
+  },
+  "history": [
+    {
+      "loss": 0.724436293630039,
+      "accuracy": 0.5294117647058824,
+      "balanced_accuracy": 0.5,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          16,
+          0
+        ]
+      ],
+      "epoch": 1,
+      "train_loss": 0.6984483934134889
+    },
+    {
+      "loss": 0.9086562868426827,
+      "accuracy": 0.5294117647058824,
+      "balanced_accuracy": 0.5,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          16,
+          0
+        ]
+      ],
+      "epoch": 2,
+      "train_loss": 0.651690953498264
+    },
+    {
+      "loss": 1.0779836291775984,
+      "accuracy": 0.5294117647058824,
+      "balanced_accuracy": 0.5,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          16,
+          0
+        ]
+      ],
+      "epoch": 3,
+      "train_loss": 0.6602025156398471
+    },
+    {
+      "loss": 1.1476036384701729,
+      "accuracy": 0.5294117647058824,
+      "balanced_accuracy": 0.5,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          16,
+          0
+        ]
+      ],
+      "epoch": 4,
+      "train_loss": 0.623427526985141
+    },
+    {
+      "loss": 1.0937404764049194,
+      "accuracy": 0.5294117647058824,
+      "balanced_accuracy": 0.5,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          16,
+          0
+        ]
+      ],
+      "epoch": 5,
+      "train_loss": 0.634816015795838
+    },
+    {
+      "loss": 1.0339687847915817,
+      "accuracy": 0.5294117647058824,
+      "balanced_accuracy": 0.5,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          16,
+          0
+        ]
+      ],
+      "epoch": 6,
+      "train_loss": 0.6161047151620439
+    },
+    {
+      "loss": 0.9608310408451978,
+      "accuracy": 0.5294117647058824,
+      "balanced_accuracy": 0.5,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          16,
+          0
+        ]
+      ],
+      "epoch": 7,
+      "train_loss": 0.6343113192551427
+    },
+    {
+      "loss": 0.9283057587111697,
+      "accuracy": 0.5294117647058824,
+      "balanced_accuracy": 0.5,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          16,
+          0
+        ]
+      ],
+      "epoch": 8,
+      "train_loss": 0.612501118680556
+    },
+    {
+      "loss": 0.9096917904475156,
+      "accuracy": 0.5588235294117647,
+      "balanced_accuracy": 0.53125,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0625
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          15,
+          1
+        ]
+      ],
+      "epoch": 9,
+      "train_loss": 0.6110513733445312
+    },
+    {
+      "loss": 0.9389433992259643,
+      "accuracy": 0.5294117647058824,
+      "balanced_accuracy": 0.5,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          16,
+          0
+        ]
+      ],
+      "epoch": 10,
+      "train_loss": 0.6095917782337545
+    },
+    {
+      "loss": 0.9616660458200118,
+      "accuracy": 0.5588235294117647,
+      "balanced_accuracy": 0.53125,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0625
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          15,
+          1
+        ]
+      ],
+      "epoch": 11,
+      "train_loss": 0.6415489821982898
+    },
+    {
+      "loss": 0.9823542728143579,
+      "accuracy": 0.5588235294117647,
+      "balanced_accuracy": 0.53125,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0625
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          15,
+          1
+        ]
+      ],
+      "epoch": 12,
+      "train_loss": 0.6229801979853953
+    },
+    {
+      "loss": 0.9701954757466036,
+      "accuracy": 0.5588235294117647,
+      "balanced_accuracy": 0.53125,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0625
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          15,
+          1
+        ]
+      ],
+      "epoch": 13,
+      "train_loss": 0.6039013622476043
+    },
+    {
+      "loss": 0.9240921871627078,
+      "accuracy": 0.5588235294117647,
+      "balanced_accuracy": 0.53125,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0625
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          15,
+          1
+        ]
+      ],
+      "epoch": 14,
+      "train_loss": 0.6094188643016404
+    },
+    {
+      "loss": 0.9850920728024315,
+      "accuracy": 0.5588235294117647,
+      "balanced_accuracy": 0.53125,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0625
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          15,
+          1
+        ]
+      ],
+      "epoch": 15,
+      "train_loss": 0.5995624734343384
+    },
+    {
+      "loss": 0.9802051226005835,
+      "accuracy": 0.5294117647058824,
+      "balanced_accuracy": 0.5034722222222222,
+      "recall_by_class": {
+        "bronchitis": 0.9444444444444444,
+        "pneumonia": 0.0625
+      },
+      "confusion_matrix": [
+        [
+          17,
+          1
+        ],
+        [
+          15,
+          1
+        ]
+      ],
+      "epoch": 16,
+      "train_loss": 0.5943163063028734
+    },
+    {
+      "loss": 0.9801037364146289,
+      "accuracy": 0.5588235294117647,
+      "balanced_accuracy": 0.53125,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0625
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          15,
+          1
+        ]
+      ],
+      "epoch": 17,
+      "train_loss": 0.5974690897001637
+    },
+    {
+      "loss": 1.0910038137260605,
+      "accuracy": 0.5294117647058824,
+      "balanced_accuracy": 0.5,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          16,
+          0
+        ]
+      ],
+      "epoch": 18,
+      "train_loss": 0.5925038637017175
+    },
+    {
+      "loss": 1.059724830529269,
+      "accuracy": 0.5294117647058824,
+      "balanced_accuracy": 0.5,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          16,
+          0
+        ]
+      ],
+      "epoch": 19,
+      "train_loss": 0.6205426321612845
+    },
+    {
+      "loss": 1.002275432295659,
+      "accuracy": 0.5294117647058824,
+      "balanced_accuracy": 0.5,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          16,
+          0
+        ]
+      ],
+      "epoch": 20,
+      "train_loss": 0.6069828301882573
+    },
+    {
+      "loss": 0.948804679162362,
+      "accuracy": 0.5294117647058824,
+      "balanced_accuracy": 0.5034722222222222,
+      "recall_by_class": {
+        "bronchitis": 0.9444444444444444,
+        "pneumonia": 0.0625
+      },
+      "confusion_matrix": [
+        [
+          17,
+          1
+        ],
+        [
+          15,
+          1
+        ]
+      ],
+      "epoch": 21,
+      "train_loss": 0.6132440459814003
+    },
+    {
+      "loss": 0.9349128954550799,
+      "accuracy": 0.5588235294117647,
+      "balanced_accuracy": 0.53125,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0625
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          15,
+          1
+        ]
+      ],
+      "epoch": 22,
+      "train_loss": 0.6179213206545054
+    },
+    {
+      "loss": 0.9993567400995422,
+      "accuracy": 0.5294117647058824,
+      "balanced_accuracy": 0.5,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          16,
+          0
+        ]
+      ],
+      "epoch": 23,
+      "train_loss": 0.6198143140017558
+    },
+    {
+      "loss": 0.9698626653236502,
+      "accuracy": 0.5588235294117647,
+      "balanced_accuracy": 0.53125,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0625
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          15,
+          1
+        ]
+      ],
+      "epoch": 24,
+      "train_loss": 0.6126591996323291
+    },
+    {
+      "loss": 0.9183056652545929,
+      "accuracy": 0.5588235294117647,
+      "balanced_accuracy": 0.53125,
+      "recall_by_class": {
+        "bronchitis": 1.0,
+        "pneumonia": 0.0625
+      },
+      "confusion_matrix": [
+        [
+          18,
+          0
+        ],
+        [
+          15,
+          1
+        ]
+      ],
+      "epoch": 25,
+      "train_loss": 0.6007320666484696
+    }
+  ]
+}
