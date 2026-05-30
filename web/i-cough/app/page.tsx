@@ -46,7 +46,7 @@ const steps = [
     num: "01",
     title: "ESP32 ดักฟังเสียงไอ",
     desc: "ไมโครโฟน INMP441 บนบอร์ด ESP32-C3 คอยฟังเสียงตลอดเวลา เมื่อตรวจจับเสียงไอจะอัดคลิปส่งขึ้น Server",
-    animation: "/cough.json",
+    animation: "/chip.json",
   },
   {
     num: "02",
@@ -321,8 +321,8 @@ export default function Home() {
             className="glass-card-static p-5 text-center"
             style={{ background: "rgba(239, 246, 255, 0.7)" }}
           >
-            <div className="w-20 h-20 mx-auto mb-3">
-              <DotLottieReact src="/doctor.json" loop autoplay />
+            <div className="w-30 h-30 mx-auto mb-3">
+              <DotLottieReact src="/many-doctor.json" loop autoplay />
             </div>
             <h3
               className="text-sm font-bold mb-2"
