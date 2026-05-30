@@ -33,10 +33,11 @@ def label_from_name(path: Path) -> str:
 
 def scan_files(data_dir: Path):
     files = []
-    for path in sorted(data_dir.rglob("*.mp3")):
-        files.append((path, label_from_name(path)))
+    for pattern in ("*.mp3", "*.wav", "*.m4a"):
+        for path in sorted(data_dir.rglob(pattern)):
+            files.append((path, label_from_name(path)))
     if not files:
-        raise SystemExit(f"No mp3 files found in {data_dir}")
+        raise SystemExit(f"No audio files found in {data_dir}")
     return files
 
 

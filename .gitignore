@@ -12,6 +12,7 @@ server/uploads/*
 .DS_Store
 Thumbs.db
 server/cough_sound_data
+server/processed_cough_data
 server/models/*.pt
 __pycache__/
 *.pyc
