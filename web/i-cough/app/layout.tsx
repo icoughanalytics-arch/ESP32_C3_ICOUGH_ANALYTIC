@@ -36,7 +36,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="th" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
+      <body className="min-h-full flex flex-col bg-gradient-medical text-[var(--foreground)]">
         <main className="flex-1 safe-bottom">{children}</main>
         <BottomNav />
       </body>
