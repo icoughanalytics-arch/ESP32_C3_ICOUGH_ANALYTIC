@@ -113,7 +113,7 @@ export default function ResultHistoryPage() {
             📊 ประวัติการประเมินเสียงไอ
           </h1>
           <Link
-            href="/assess"
+            href="/report"
             className="text-xs font-bold text-sky-600 bg-sky-50 hover:bg-sky-100/80 px-3 py-2 rounded-lg transition"
           >
             ประเมินเพิ่ม
@@ -225,7 +225,7 @@ export default function ResultHistoryPage() {
             <div className="glass-card-static p-8 text-center text-slate-500 space-y-4">
               <p className="text-sm">ยังไม่มีบันทึกประวัติการประเมินอาการร่วม</p>
               <Link
-                href="/assess"
+                href="/report"
                 className="inline-block rounded-xl bg-sky-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-sky-700 transition"
               >
                 ประเมินด่าน Checklist ครั้งแรก
@@ -244,7 +244,7 @@ export default function ResultHistoryPage() {
 
         {/* Footer Navigation Buttons */}
         <div className="mt-8 space-y-3">
-          <Link href="/assess" className="btn-outline w-full text-sm font-extrabold py-3">
+          <Link href="/report" className="btn-outline w-full text-sm font-extrabold py-3">
             <svg
               width="18"
               height="18"
