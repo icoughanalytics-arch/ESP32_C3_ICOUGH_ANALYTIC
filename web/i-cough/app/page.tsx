@@ -58,7 +58,7 @@ const steps = [
     num: "03",
     title: "แจ้งเตือน & ประเมินผล",
     desc: "ส่งผลวิเคราะห์ผ่าน Line Notification ให้ผู้ปกครอง ทำ Checklist ประเมินอาการร่วม สรุปเป็นระดับเสี่ยง เขียว/เหลือง/แดง",
-    animation: "/doctor describe.json",
+    animation: "/line.json",
   },
 ];
 
