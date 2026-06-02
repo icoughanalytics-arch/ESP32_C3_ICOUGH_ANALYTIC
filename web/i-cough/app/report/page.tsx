@@ -334,7 +334,9 @@ function ReportSection({
   onChecklistAverage: () => void;
   onChecklistRecord: (record: CoughRecord) => void;
 }) {
+  const [showAll, setShowAll] = useState(false);
   const summary = getSummary(records);
+  const displayedRecords = showAll ? records : records.slice(0, 3);
 
   return (
     <section className="space-y-3">
@@ -367,12 +369,31 @@ function ReportSection({
       </div>
 
       <div className="space-y-3">
-        {records.length > 0 ? (
-          records.map((record) => (
+        {displayedRecords.length > 0 ? (
+          displayedRecords.map((record) => (
             <EventCard key={record.id} record={record} onChecklist={() => onChecklistRecord(record)} />
           ))
         ) : (
           <div className="glass-card-static p-4 text-sm text-slate-600">{emptyText}</div>
+        )}
+
+        {records.length > 3 && (
+          <button
+            type="button"
+            onClick={() => setShowAll(!showAll)}
+            className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50/70 hover:bg-sky-100/80 px-4 py-3 text-xs font-extrabold text-sky-700 shadow-sm transition active:scale-95"
+          >
+            <span>{showAll ? "แสดงน้อยลง (Show less)" : `แสดงทั้งหมด (Show all ${records.length} รายการ)`}</span>
+            <svg
+              className={`h-3 w-3 transform transition-transform duration-200 ${showAll ? "rotate-180" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={3}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
         )}
       </div>
     </section>
