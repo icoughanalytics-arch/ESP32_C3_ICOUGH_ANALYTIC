@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 export type RiskLevel = "low" | "moderate" | "high";
 export type DiseaseKey = "pneumonia" | "croup" | "bronchitis" | "normal";
@@ -80,11 +81,58 @@ function getSummary(records: CoughRecord[]) {
 }
 
 function computeFinalRisk(records: CoughRecord[], checklist: ChecklistState): RiskLevel {
-  if (checklist.chestRetraction || checklist.stridor || checklist.dangerSign) return "high";
-  if (records.some((r) => r.risk_level === "high")) return "high";
-  if (checklist.fastBreathing || records.some((r) => r.risk_level === "moderate")) {
+  const summary = getSummary(records);
+  const avgP = summary.avg.pneumonia;
+  const avgC = summary.avg.croup;
+  const avgB = summary.avg.bronchitis;
+  const avgN = summary.avg.normal;
+
+  // 1. ไฟสีแดง: ความเสี่ยงสูง / วิกฤต (High Risk)
+  // - เงื่อนไขข้ามสาย (Override Logic): ติ๊ก ซี่โครงบุ๋ม หรือ Stridor หรือ สัญญาณอันตรายรุนแรง
+  if (checklist.chestRetraction || checklist.stridor || checklist.dangerSign) {
+    return "high";
+  }
+  // - เงื่อนไข AI: วิเคราะห์ได้กลุ่มโรค (ปอดบวม หรือ ครูป หรือ หลอดลมอักเสบ) เฉลี่ยตั้งแต่ 75% ขึ้นไป
+  if (avgP >= 0.75 || avgC >= 0.75 || avgB >= 0.75) {
+    return "high";
+  }
+
+  // 2. ไฟสีเหลือง: เฝ้าระวัง / ความเสี่ยงปานกลาง (Moderate Risk)
+  // - เงื่อนไข Checklist: ติ๊ก "หายใจเร็วเกินเกณฑ์อายุ" เพียงข้อเดียว (โดยไม่มีอาการรุนแรงอื่นในกลุ่มไฟแดง)
+  if (checklist.fastBreathing) {
     return "moderate";
   }
+  // - เงื่อนไข AI: วิเคราะห์ได้กลุ่มโรค (ปอดบวม หรือ ครูป หรือ หลอดลมอักเสบ) เฉลี่ยอยู่ระหว่าง 50% - 74%
+  if (
+    (avgP >= 0.50 && avgP < 0.75) ||
+    (avgC >= 0.50 && avgC < 0.75) ||
+    (avgB >= 0.50 && avgB < 0.75)
+  ) {
+    return "moderate";
+  }
+  // - เงื่อนไขกรณีสับสน (Edge Case): คะแนน AI กลุ่มโรค ออกมาก้ำกึ่งใกล้เคียงกันมาก (เช่น 30% เท่ากันเป๊ะ หรือต่างกันไม่เกิน 2%)
+  const hasDiseaseScores = avgP > 0 || avgC > 0 || avgB > 0;
+  const isConfused =
+    hasDiseaseScores &&
+    Math.abs(avgP - avgB) < 0.02 &&
+    Math.abs(avgB - avgC) < 0.02 &&
+    Math.abs(avgP - avgC) < 0.02;
+  if (isConfused) {
+    return "moderate";
+  }
+
+  // 3. ไฟสีเขียว: ความเสี่ยงต่ำ (Low Risk)
+  // - เงื่อนไขร่วมกัน: AI วิเคราะห์กลุ่มปกติ (Healthy) ตั้งแต่ 80% ขึ้นไป และไม่ได้ติ๊กช่องใดๆ เลย
+  const noChecklist =
+    !checklist.fastBreathing &&
+    !checklist.chestRetraction &&
+    !checklist.stridor &&
+    !checklist.dangerSign;
+  if (avgN >= 0.80 && noChecklist) {
+    return "low";
+  }
+
+  // เผื่อกรณีอื่นๆ ที่ไม่เข้าเงื่อนไขเด่นชัดข้างต้น ให้ค่าเริ่มต้นเป็นความเสี่ยงต่ำเพื่อความปลอดภัย
   return "low";
 }
 
@@ -105,6 +153,7 @@ export default function ChecklistModal({
   onClose,
   onSave,
 }: ChecklistModalProps) {
+  const [showLightsDesc, setShowLightsDesc] = useState(false);
   const summary = getSummary(target.records);
   const finalRisk = computeFinalRisk(target.records, checklist);
 
@@ -265,20 +314,134 @@ export default function ChecklistModal({
           </div>
 
           {/* Action Button */}
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={onSave}
-              className="w-full rounded-lg bg-sky-600 px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-sky-700 active:scale-[0.98]"
-            >
-              บันทึกลง summary_record
-            </button>
-            {saveStatus && (
-              <p className="mt-2 text-center text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-100 rounded-lg py-2">
-                {saveStatus}
-              </p>
-            )}
-          </div>
+          {saveStatus === "บันทึก summary_record แล้ว" ? (
+            <div className="space-y-4 animate-fade-in border-t border-slate-100 pt-4">
+              {/* สัญญาณไฟกลมเรืองแสงขนาดใหญ่ */}
+              <div className="flex flex-col items-center justify-center py-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className={`h-16 w-16 rounded-full mb-3 shadow-lg ${
+                  finalRisk === "high"
+                    ? "bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.8)] animate-pulse"
+                    : finalRisk === "moderate"
+                      ? "bg-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.8)]"
+                      : "bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.8)]"
+                }`} />
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">ระดับความเสี่ยงของเด็ก</span>
+                <span className="text-base font-extrabold text-slate-900 mt-1">
+                  {finalRisk === "high" && "ความเสี่ยงสูง / วิกฤต (High Risk / Critical)"}
+                  {finalRisk === "moderate" && "ความเสี่ยงปานกลาง (Moderate Risk)"}
+                  {finalRisk === "low" && "ความเสี่ยงต่ำ (Low Risk)"}
+                </span>
+              </div>
+
+              {/* ข้อแนะนำหลัก */}
+              <div className={`rounded-xl border p-4 text-xs leading-relaxed font-semibold space-y-2 ${
+                finalRisk === "high"
+                  ? "bg-red-50 border-red-200 text-red-900"
+                  : finalRisk === "moderate"
+                    ? "bg-amber-50 border-amber-200 text-amber-900"
+                    : "bg-emerald-50 border-emerald-200 text-emerald-900"
+              }`}>
+                <div className="font-extrabold text-sm border-b pb-1">
+                  🩺 นิยาม WHO: {
+                    finalRisk === "high"
+                      ? "โรคปอดบวมขั้นรุนแรงมาก หรือ โรคระบบทางเดินหายใจเฉียบพลันวิกฤต (Severe Pneumonia or Very Severe Disease)"
+                      : finalRisk === "moderate"
+                        ? "โรคปอดบวมระดับเริ่มต้น (Pneumonia)"
+                        : "ไอ หรือ หวัดธรรมดา"
+                  }
+                </div>
+                <div>
+                  💡 {
+                    finalRisk === "high"
+                      ? "อันตรายขั้นวิกฤต! เด็กมีสัญญาณภาวะทางเดินหายใจล้มเหลวเฉียบพลัน โปรดนำเด็กส่งห้องฉุกเฉินของโรงพยาบาลที่ใกล้ที่สุดทันที"
+                      : finalRisk === "moderate"
+                        ? "เฝ้าระวัง: เด็กมีภาวะหายใจเร็วเข้าเกณฑ์โรคปอดบวม แนะนำให้พาเด็กไปพบแพทย์ที่คลินิกหรือโรงพยาบาลชุมชนเพื่อรับยาปฏิชีวนะชนิดกิน และควรทำประเมินซ้ำในแอปพลิเคชันภายใน 48 ชั่วโมง"
+                        : "เด็กมีความเสี่ยงต่ำ ปลอดภัยจากภาวะปอดบวม ให้ดูแลตามอาการที่บ้าน เช่น ดื่มน้ำอุ่นเพื่อละลายเสมหะ และทำประเมินซ้ำหากเด็กเริ่มไอถี่ขึ้น"
+                  }
+                </div>
+              </div>
+
+              {/* Dropdown คำอธิบายระดับไฟ WHO */}
+              <div className="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => setShowLightsDesc(!showLightsDesc)}
+                  className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold text-slate-700 bg-slate-50/50 hover:bg-slate-50 transition"
+                >
+                  <span>📖 ดูคำอธิบายเกณฑ์สัญญาณไฟของ WHO ทั้งหมด</span>
+                  <svg
+                    className={`h-3 w-3 transform transition-transform duration-200 ${showLightsDesc ? "rotate-180" : ""}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {showLightsDesc && (
+                  <div className="p-4 border-t border-slate-100 bg-white text-[11px] space-y-3.5 leading-relaxed text-slate-700">
+                    <div className="border-l-4 border-emerald-500 pl-2.5">
+                      <div className="font-extrabold text-emerald-800 text-xs">🟢 ไฟสีเขียว: ความเสี่ยงต่ำ (Low Risk)</div>
+                      <div className="text-slate-500 mt-0.5"><strong className="font-bold">นิยาม WHO:</strong> ไอ หรือ หวัดธรรมดา</div>
+                      <div className="mt-0.5"><strong className="font-bold">คำแนะนำ:</strong> "เด็กมีความเสี่ยงต่ำ ปลอดภัยจากภาวะปอดบวม ให้ดูแลตามอาการที่บ้าน เช่น ดื่มน้ำอุ่นเพื่อละลายเสมหะ และทำประเมินซ้ำหากเด็กเริ่มไอถี่ขึ้น"</div>
+                    </div>
+                    <div className="border-l-4 border-amber-500 pl-2.5">
+                      <div className="font-extrabold text-amber-800 text-xs">🟡 ไฟสีเหลือง: ความเสี่ยงปานกลาง (Moderate Risk)</div>
+                      <div className="text-slate-500 mt-0.5"><strong className="font-bold">นิยาม WHO:</strong> โรคปอดบวมระดับเริ่มต้น (Pneumonia)</div>
+                      <div className="mt-0.5"><strong className="font-bold">คำแนะนำ:</strong> "เฝ้าระวัง: เด็กมีภาวะหายใจเร็วเข้าเกณฑ์โรคปอดบวม แนะนำให้พาเด็กไปพบแพทย์ที่คลินิกหรือโรงพยาบาลชุมชนเพื่อรับยาปฏิชีวนะชนิดกิน และควรทำประเมินซ้ำในแอปพลิเคชันภายใน 48 ชั่วโมง"</div>
+                    </div>
+                    <div className="border-l-4 border-red-500 pl-2.5">
+                      <div className="font-extrabold text-red-800 text-xs">🔴 ไฟสีแดง: ความเสี่ยงสูง/วิกฤต (High Risk / Critical)</div>
+                      <div className="text-slate-500 mt-0.5"><strong className="font-bold">นิยาม WHO:</strong> โรคปอดบวมขั้นรุนแรงมาก หรือ โรคระบบทางเดินหายใจเฉียบพลันวิกฤต (Severe Pneumonia or Very Severe Disease)</div>
+                      <div className="mt-0.5"><strong className="font-bold">คำแนะนำ:</strong> "อันตรายขั้นวิกฤต! เด็กมีสัญญาณภาวะทางเดินหายใจล้มเหลวเฉียบพลัน โปรดนำเด็กส่งห้องฉุกเฉินของโรงพยาบาลที่ใกล้ที่สุดทันที"</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ปุ่มนำทางไปหน้าสรุปผล */}
+              <div className="pt-2 space-y-2">
+                <Link
+                  href="/result"
+                  className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-sky-600 to-sky-700 px-4 py-3 text-sm font-extrabold text-white shadow-md hover:from-sky-700 hover:to-sky-800 active:scale-[0.98] transition-all"
+                >
+                  <span>📊 ดูหน้าสรุปผล / ประวัติทั้งหมด</span>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M5 12h14" />
+                    <path d="M12 5l7 7-7 7" />
+                  </svg>
+                </Link>
+                <p className="text-center text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg py-2 animate-pulse">
+                  ✓ บันทึกข้อมูลและประเมินระดับสัญญาณไฟ WHO สำเร็จ!
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={onSave}
+                className="w-full rounded-lg bg-sky-600 px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-sky-700 active:scale-[0.98]"
+              >
+                บันทึกลง summary_record
+              </button>
+              {saveStatus && (
+                <p className="mt-2 text-center text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-100 rounded-lg py-2">
+                  {saveStatus}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -100,11 +100,58 @@ function getSummary(records: CoughRecord[]) {
 }
 
 function computeFinalRisk(records: CoughRecord[], checklist: ChecklistState): RiskLevel {
-  if (checklist.chestRetraction || checklist.stridor || checklist.dangerSign) return "high";
-  if (records.some((r) => r.risk_level === "high")) return "high";
-  if (checklist.fastBreathing || records.some((r) => r.risk_level === "moderate")) {
+  const summary = getSummary(records);
+  const avgP = summary.avg.pneumonia;
+  const avgC = summary.avg.croup;
+  const avgB = summary.avg.bronchitis;
+  const avgN = summary.avg.normal;
+
+  // 1. ไฟสีแดง: ความเสี่ยงสูง / วิกฤต (High Risk)
+  // - เงื่อนไขข้ามสาย (Override Logic): ติ๊ก ซี่โครงบุ๋ม หรือ Stridor หรือ สัญญาณอันตรายรุนแรง
+  if (checklist.chestRetraction || checklist.stridor || checklist.dangerSign) {
+    return "high";
+  }
+  // - เงื่อนไข AI: วิเคราะห์ได้กลุ่มโรค (ปอดบวม หรือ ครูป หรือ หลอดลมอักเสบ) เฉลี่ยตั้งแต่ 75% ขึ้นไป
+  if (avgP >= 0.75 || avgC >= 0.75 || avgB >= 0.75) {
+    return "high";
+  }
+
+  // 2. ไฟสีเหลือง: เฝ้าระวัง / ความเสี่ยงปานกลาง (Moderate Risk)
+  // - เงื่อนไข Checklist: ติ๊ก "หายใจเร็วเกินเกณฑ์อายุ" เพียงข้อเดียว (โดยไม่มีอาการรุนแรงอื่นในกลุ่มไฟแดง)
+  if (checklist.fastBreathing) {
     return "moderate";
   }
+  // - เงื่อนไข AI: วิเคราะห์ได้กลุ่มโรค (ปอดบวม หรือ ครูป หรือ หลอดลมอักเสบ) เฉลี่ยอยู่ระหว่าง 50% - 74%
+  if (
+    (avgP >= 0.50 && avgP < 0.75) ||
+    (avgC >= 0.50 && avgC < 0.75) ||
+    (avgB >= 0.50 && avgB < 0.75)
+  ) {
+    return "moderate";
+  }
+  // - เงื่อนไขกรณีสับสน (Edge Case): คะแนน AI กลุ่มโรค ออกมาก้ำกึ่งใกล้เคียงกันมาก (เช่น 30% เท่ากันเป๊ะ หรือต่างกันไม่เกิน 2%)
+  const hasDiseaseScores = avgP > 0 || avgC > 0 || avgB > 0;
+  const isConfused =
+    hasDiseaseScores &&
+    Math.abs(avgP - avgB) < 0.02 &&
+    Math.abs(avgB - avgC) < 0.02 &&
+    Math.abs(avgP - avgC) < 0.02;
+  if (isConfused) {
+    return "moderate";
+  }
+
+  // 3. ไฟสีเขียว: ความเสี่ยงต่ำ (Low Risk)
+  // - เงื่อนไขร่วมกัน: AI วิเคราะห์กลุ่มปกติ (Healthy) ตั้งแต่ 80% ขึ้นไป และไม่ได้ติ๊กช่องใดๆ เลย
+  const noChecklist =
+    !checklist.fastBreathing &&
+    !checklist.chestRetraction &&
+    !checklist.stridor &&
+    !checklist.dangerSign;
+  if (avgN >= 0.80 && noChecklist) {
+    return "low";
+  }
+
+  // เผื่อกรณีอื่นๆ ที่ไม่เข้าเงื่อนไขเด่นชัดข้างต้น ให้ค่าเริ่มต้นเป็นความเสี่ยงต่ำเพื่อความปลอดภัย
   return "low";
 }
 
