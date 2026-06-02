@@ -337,10 +337,9 @@ export default function Home() {
             >
               ขอขอบคุณ{" "}
               <strong style={{ color: "var(--primary-700)" }}>
-                มหาวิทยาลัยเสฉวน (Sichuan University)
+                มหาวิทยาลัยเสฉวน (Sichuan University), สถาบันเทคโนโลยีแห่งสหพันธ์สวิส โลซาน (EPFL) และ ฐานข้อมูลทางคลินิก theSimTech 
               </strong>{" "}
-              สำหรับชุดข้อมูลตัวอย่างเสียงไอที่ใช้ในการพัฒนาและฝึกฝนโมเดล AI
-              ซึ่งเป็นส่วนสำคัญในการวิจัยและพัฒนาระบบ iCough Analytic
+              สำหรับการเผยแพร่ชุดข้อมูลอ้างอิงสัญญาณเสียงไอและเสียงระบบทางเดินหายใจมาตรฐานทางการแพทย์ (Clinical Dataset)
             </p>
             <div
               className="flex items-center justify-center gap-2 text-xs"
