@@ -82,7 +82,7 @@ export default function Home() {
             style={{ animationDelay: "0.2s" }}
           >
             <span className="text-gradient">iCough</span>{" "}
-            <span style={{ color: "var(--foreground)" }}>Analytic</span>
+            <span style={{ color: "var(--foreground)" }}>Analytics</span>
           </h1>
 
           <p
@@ -335,7 +335,7 @@ export default function Home() {
               className="text-xs leading-relaxed mb-3"
               style={{ color: "var(--muted)" }}
             >
-              ขอขอบคุณ{" "}
+              ขอขอบพระคุณ {" "}
               <strong style={{ color: "var(--primary-700)" }}>
                 มหาวิทยาลัยเสฉวน (Sichuan University), สถาบันเทคโนโลยีแห่งสหพันธ์สวิส โลซาน (EPFL) และ ฐานข้อมูลทางคลินิก theSimTech 
               </strong>{" "}
