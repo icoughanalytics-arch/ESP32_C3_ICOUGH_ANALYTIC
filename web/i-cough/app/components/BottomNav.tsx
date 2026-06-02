@@ -24,7 +24,7 @@ const navItems = [
     ),
   },
   {
-    href: "/assess",
+    href: "/report",
     label: "ประเมินอาการ",
     icon: (active: boolean) => (
       <svg
