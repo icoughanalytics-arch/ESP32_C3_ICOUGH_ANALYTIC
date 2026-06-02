@@ -157,22 +157,23 @@ export default function Home() {
             ].map((item, i) => (
               <div
                 key={i}
-                className="rounded-xl p-3 text-center transition-all duration-200"
-                style={{
-                  background: item.bg,
-                  border: `1px solid ${item.border}`,
-                }}
+                className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white h-40 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
               >
-                <div className="w-12 h-12 mx-auto mb-1 flex items-center justify-center">
-                  <Image
-                    src={item.img}
-                    alt={item.label}
-                    width={48}
-                    height={48}
-                    className="object-contain"
-                  />
+                {/* รูปภาพขยายแผ่เต็มพื้นที่ 100% ทะลุขอบการ์ดด้วย object-cover ลบขอบขาวล้อมรอบ */}
+                <div className="absolute inset-0 pb-10">
+                  <div className="relative w-full h-full overflow-hidden">
+                    <Image
+                      src={item.img}
+                      alt={item.label}
+                      fill
+                      sizes="(max-width: 768px) 50vw, 25vw"
+                      className="object-cover transition-transform duration-300 hover:scale-105"
+                    />
+                  </div>
                 </div>
-                <div className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
+                
+                {/* ข้อความวางทับด้านล่างสุด บนแถบสีขาวล้วนเด่นชัด */}
+                <div className="absolute bottom-0 inset-x-0 bg-white border-t border-slate-100 py-2.5 px-3 text-center text-xs sm:text-sm font-extrabold text-slate-800 z-10 shadow-sm">
                   {item.label}
                 </div>
               </div>

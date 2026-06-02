@@ -292,7 +292,7 @@ function HistoryCard({ record }: { record: SummaryRecord }) {
 
   // ดึงข้อมูลรูปภาพและไฟล์เสียงสำหรับไอแต่ละครั้งตาม cough_ids ของการ์ดนั้นๆ
   useEffect(() => {
-    if (!showDetails || coughs.length > 0 || !record.cough_ids || record.cough_ids.length === 0) return;
+    if (coughs.length > 0 || !record.cough_ids || record.cough_ids.length === 0) return;
 
     async function fetchCoughs() {
       setLoadingCoughs(true);
@@ -355,68 +355,172 @@ function HistoryCard({ record }: { record: SummaryRecord }) {
   // พล็อตกราฟ SVG แสดงช่วงเวลาและความถี่การไอของกลุ่มนี้ (Timeline)
   const renderCoughTimeline = () => {
     if (record.cough_ids.length <= 1) return null;
-    const minTime = new Date(record.start_at).getTime();
-    const maxTime = new Date(record.end_at).getTime();
+    
+    const activeCoughs = coughs.length > 0 ? coughs : [];
+    
+    // 1. หาจุดเวลาไอจริงจากข้อมูลเพื่อเริ่มแกน X ที่การไอครั้งแรกและจบที่ครั้งสุดท้าย
+    const minTime = activeCoughs.length > 0 
+      ? new Date(activeCoughs[0].created_at).getTime()
+      : new Date(record.start_at).getTime();
+    const maxTime = activeCoughs.length > 0 
+      ? new Date(activeCoughs[activeCoughs.length - 1].created_at).getTime()
+      : new Date(record.end_at).getTime();
     const durationMs = maxTime - minTime || 1;
 
-    // หาจุดพล็อตเปอร์เซ็นต์ตามค่า created_at ของข้อมูลไอแต่ละครั้ง
-    // ใช้ record.cough_ids ในการพล็อตเส้นจำลอง หรือข้อมูลจริงของ coughs ถ้าโหลดแล้ว
-    const plotTimes = coughs.length > 0
-      ? coughs.map(c => new Date(c.created_at).getTime())
-      : [minTime, ...record.cough_ids.slice(1, -1).map((_, idx) => minTime + (durationMs * (idx + 1)) / record.cough_ids.length), maxTime]; // จำลองจุดพล็อตก่อนดึงจริง
+    // 2. กำหนดแกน X เป็น 6 ช่องเสมอตามที่ลูกค้าต้องการ (แท่งกราฟจะอวบอิ่มสวยงามขึ้น)
+    const totalHours = 6;
+    const binMs = durationMs / totalHours;
+    
+    // พิกัดแกนพล็อต:
+    // แกน Y อยู่ที่ X=12
+    // แกน X อยู่ที่ Y=60 แผ่ไปทางขวาถึง X=95
+    const startX = 12;
+    const endX = 95;
+    const widthX = endX - startX;
+    const colWidth = widthX / totalHours;
+
+    const points: Array<{ xCenter: number; yPos: number; count: number; label: string; xStart: number; xEnd: number }> = [];
+
+    // หาเวลาไอทั้งหมดเพื่อนำมาจัดลงถังเวลา (Binning)
+    const plotTimes = activeCoughs.length > 0
+      ? activeCoughs.map(c => new Date(c.created_at).getTime())
+      : record.cough_ids.length > 1
+        ? [minTime, ...record.cough_ids.slice(1, -1).map((_, idx) => minTime + (durationMs * (idx + 1)) / record.cough_ids.length), maxTime]
+        : [minTime];
+
+    // จัดกลุ่มจำนวนครั้งที่ไอในแต่ละช่วงถังเวลา 6 ช่อง
+    for (let h = 0; h < totalHours; h++) {
+      const hStart = minTime + h * binMs;
+      const hEnd = minTime + (h + 1) * binMs;
+
+      const countInBin = plotTimes.filter(t => {
+        if (h === totalHours - 1) {
+          return t >= hStart && t <= hEnd;
+        }
+        return t >= hStart && t < hEnd;
+      }).length;
+
+      const xStart = startX + h * colWidth;
+      const xEnd = startX + (h + 1) * colWidth;
+      const xCenter = xStart + colWidth / 2;
+
+      const labelTime = new Date(hStart);
+      const labelStr = `${String(labelTime.getHours()).padStart(2, "0")}:${String(labelTime.getMinutes()).padStart(2, "0")}`;
+
+      points.push({ xCenter, yPos: 0, count: countInBin, label: labelStr, xStart, xEnd });
+    }
+
+    const maxCount = Math.max(...points.map(p => p.count)) || 1;
+    const maxScaleY = maxCount; // ใช้ค่าสูงสุดจริงเป็นสเกลแกน Y
+    const yStep = maxScaleY / 4; // แบ่งแกน Y เป็น 4 ระดับสเกลพอดีเป๊ะ!
+
+    // คำนวณพิกัด Y ของแท่งกราฟ (ความสูงสูงสุดอยู่ที่ Y=12 และฐานแกน X อยู่ที่ Y=60)
+    points.forEach(p => {
+      p.yPos = 60 - (p.count / maxScaleY) * 45;
+    });
+
+    const labelIntervalHours = (durationMs / (1000 * 60 * 60)) / totalHours;
 
     return (
-      <div className="rounded-xl border border-slate-150 bg-slate-50/40 p-3 space-y-2 mt-4">
+      <div className="rounded-xl border border-slate-150 bg-slate-50/40 p-4 space-y-2.5 mt-4">
         <div className="text-[11px] font-bold text-slate-800 flex justify-between">
-          <span>📈 กราฟประเมินความถี่การไอตาม Timeline (ส่งหมอดู)</span>
-          <span className="text-sky-700 font-bold">รวม {record.cough_ids.length} ครั้ง</span>
+          <span>📊 กราฟแท่งความถี่การไอ (เฉลี่ย {totalHours} ช่วงเวลา)</span>
+          <span className="text-sky-700 font-extrabold">รวม {record.cough_ids.length} ครั้ง | ช่วงละ {labelIntervalHours.toFixed(1)} ชม.</span>
         </div>
 
-        {/* SVG Timeline plotting */}
-        <div className="relative pt-3 pb-5">
-          <svg className="w-full h-8" overflow="visible">
-            {/* เส้นแนวขวางหลักของแกนไทม์ไลน์ */}
-            <line x1="5%" y1="50%" x2="95%" y2="50%" stroke="#cbd5e1" strokeWidth="2.5" strokeLinecap="round" />
+        {/* SVG Bar Chart plotting */}
+        <div className="relative pt-2 pb-1">
+          <svg viewBox="0 0 100 78" className="w-full" overflow="visible">
+            <defs>
+              <linearGradient id={`barGrad-${record.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#38bdf8" /> {/* sky-400 */}
+                <stop offset="100%" stopColor="#0284c7" /> {/* sky-600 */}
+              </linearGradient>
+            </defs>
 
-            {/* เส้นเวลาแบ่งย่อย */}
-            <line x1="5%" y1="35%" x2="5%" y2="65%" stroke="#94a3b8" strokeWidth="1.5" />
-            <line x1="50%" y1="40%" x2="50%" y2="60%" stroke="#cbd5e1" strokeWidth="1" />
-            <line x1="95%" y1="35%" x2="95%" y2="65%" stroke="#94a3b8" strokeWidth="1.5" />
-
-            {/* จุดพล็อตเวลาการไอแต่ละครั้ง */}
-            {plotTimes.map((time, idx) => {
-              const diffMs = time - minTime;
-              const pct = (diffMs / durationMs) * 90 + 5; // กราวด์ให้อยู่ระหว่าง 5% ถึง 95%
+            {/* 1. แท่งกราฟแสดงความถี่การไอ (Bar Chart) */}
+            {points.map((p, idx) => {
+              if (p.count === 0) return null;
+              const barWidth = colWidth * 0.65; // ความกว้างของแท่งกราฟให้มี Gap สวยงาม
+              const xPos = p.xCenter - barWidth / 2;
+              const barHeight = 60 - p.yPos;
               return (
-                <g key={idx} className="group">
-                  <circle
-                    cx={`${pct}%`}
-                    cy="50%"
-                    r="5.5"
-                    fill="#0284c7"
-                    className="cursor-pointer hover:r-7 transition-all shadow-[0_0_8px_rgba(2,132,199,0.7)]"
-                  />
-                  {/* ข้อมูล Tooltip เวลาอย่างย่อเหนือจุด */}
-                  <text
-                    x={`${pct}%`}
-                    y="10"
-                    textAnchor="middle"
-                    fill="#475569"
-                    fontSize="8px"
-                    fontWeight="bold"
+                <rect
+                  key={idx}
+                  x={xPos}
+                  y={p.yPos}
+                  width={barWidth}
+                  height={barHeight}
+                  rx="1"
+                  ry="1"
+                  fill={`url(#barGrad-${record.id})`}
+                  className="transition-all duration-300 hover:opacity-85"
+                />
+              );
+            })}
+
+            {/* 2. แกน Y แนวตั้งด้านซ้าย (ลดความหนาและสีจางลงตามลูกค้าขอ) */}
+            <line x1={startX} y1="8" x2={startX} y2="60" stroke="#94a3b8" strokeWidth="1" strokeLinecap="round" />
+
+            {/* 3. แกน X แนวนอนด้านล่าง (ลดความหนาและสีจางลงตามลูกค้าขอ) */}
+            <line x1={startX} y1="60" x2={endX + 2} y2="60" stroke="#94a3b8" strokeWidth="1" strokeLinecap="round" />
+
+            {/* 4. ขีดบอกสเกลและตัวเลขสเกลบนแกน Y ด้านซ้าย (แบ่งเป็น 4 ระดับเป๊ะๆ) */}
+            {Array.from({ length: 4 }).map((_, idx) => {
+              const scaleIdx = idx + 1;
+              const yVal = 60 - (scaleIdx / 4) * 45;
+              const scaleText = Number((yStep * scaleIdx).toFixed(1)).toString();
+              return (
+                <g key={idx}>
+                  {/* ขีดสเกลบางเฉียบ */}
+                  <line x1={startX - 2} y1={yVal} x2={startX} y2={yVal} stroke="#cbd5e1" strokeWidth="0.8" />
+                  <text 
+                    x={startX - 4} 
+                    y={yVal + 2} 
+                    textAnchor="end" 
+                    fill="#64748b" 
+                    fontSize="5px" 
+                    fontWeight="800"
                   >
-                    {formatShortTime(new Date(time))}
+                    {scaleText}
                   </text>
                 </g>
               );
             })}
+
+            {/* 5. ขีดแบ่งช่วงแนวตั้งบนแกน X (Ticks คั่นช่อง บางเฉียบ) */}
+            {points.map((p, idx) => {
+              if (idx === points.length - 1) return null; // ไม่ต้องขีดคั่นหลังช่องสุดท้าย
+              return (
+                <line 
+                  key={idx} 
+                  x1={p.xEnd} 
+                  y1="58.5" 
+                  x2={p.xEnd} 
+                  y2="61.5" 
+                  stroke="#cbd5e1" 
+                  strokeWidth="0.8" 
+                />
+              );
+            })}
+
+            {/* 6. ตัวเลขเวลากำกับแกน X ด้านล่างสุด (แสดงครบทุกช่องด้วยขนาดกระชับ 4.8px พอดีกับ 1 ช่องไม่ทับกัน) */}
+            {points.map((p, idx) => (
+              <text 
+                key={idx}
+                x={p.xCenter} 
+                y="65" 
+                textAnchor="middle" 
+                fill="#64748b" 
+                fontSize="4px" 
+                fontWeight="900"
+                style={{ letterSpacing: "-0.2px" }}
+              >
+                {p.label}
+              </text>
+            ))}
           </svg>
-          {/* ข้อมูลเวลากำกับซ้าย-ขวา */}
-          <div className="flex justify-between text-[9px] text-slate-500 font-bold px-1 mt-1">
-            <span>{formatShortTime(record.start_at)}</span>
-            <span className="text-slate-400">← แกนเวลาไอจริงความถี่ →</span>
-            <span>{formatShortTime(record.end_at)}</span>
-          </div>
+        
         </div>
       </div>
     );
