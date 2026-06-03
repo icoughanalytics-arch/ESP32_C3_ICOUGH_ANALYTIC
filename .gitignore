@@ -11,7 +11,7 @@ server/uploads/*
 *.elf
 .DS_Store
 Thumbs.db
-server/cough_sound_data
+server/raw_sound_data/
 server/processed_cough_data
 server/models/*.pt
 __pycache__/
