@@ -47,7 +47,16 @@
 
 ## Server / AI Architecture
 - FastAPI server รับไฟล์เสียงจาก ESP32 ผ่าน endpoint `/upload-audio`
-- ประมวลผลและจำแนกเสียงไอด้วย AI (PyTorch CNN)
+- **ระบบวิเคราะห์เสียงไอแบ่งเป็น 2 โพรเซสใหญ่**:
+  1. **โพรเซสที่ 1: Cough Filter / Detection (แยกแยะเสียงไอ)**
+     - ตรวจสอบว่าสัญญาณเสียงที่ได้รับเป็นเสียงไอจริงหรือไม่ (ไม่ใช่เสียงเด็กร้องไห้ พูดคุย หรือเสียงรบกวน)
+     - หากตรวจพบว่าไม่ใช่เสียงไอ จะตอบกลับทันทีโดยไม่ประมวลผลต่อ
+  2. **โพรเซสที่ 2: Disease Classification (วิเคราะห์เปอร์เซ็นต์กลุ่มโรค)**
+     - ประมวลผลร่วมกันใน 3 โพรเซสย่อย (Hybrid/Ensemble Approach):
+       * **Path A**: โมเดล Custom CNN (ใช้ Log-Mel Spectrogram จำแนก 4 คลาส)
+       * **Path B**: โมเดล Pre-trained (ใช้ YAMNet Embeddings เพื่อแยกแยะ)
+       * **Path C**: Acoustic Rules (ใช้สูตรกายภาพของเสียงไอ เช่น WI, ER, ZCR, SC)
+     - นำผลความมั่นใจของแต่ละคลาสโรคจากทุกโพรเซสย่อยมาคูณกับแฟกเตอร์ถ่วงน้ำหนัก (Weight Factor) ตามความน่าเชื่อถือ แล้วสรุปรวมเป็นเปอร์เซ็นต์ (%) ในฝั่ง Server ก่อนส่งไปประเมินผลร่วมกับ Checklist ฝั่ง Client
 - **Supabase Integration**:
   - บันทึกรายละเอียดการวิเคราะห์ (คลาสโรค, ความมั่นใจ) ลง Supabase DB
   - อัปโหลดไฟล์เสียง `.wav` เก็บไว้ใน Supabase Storage
@@ -58,6 +67,36 @@
   - เลือกช่วงเสียงที่มีพลังงานสูงสุด ความยาว 3 วินาที
   - แปลงเป็น Log-Mel Spectrogram
   - ส่งเข้า CNN เพื่อจำแนกคลาส (Healthy, Pneumonia, Bronchitis, Croup)
+
+### Acoustic Feature Extraction & Scoring Formulas (Acoustic Rules)
+ใช้คำนวณและประเมินเป็นคะแนน (Acoustic Score) จากคุณสมบัติกายภาพของเสียงไอที่สกัดด้วย Librosa บน FastAPI server เพื่อเสริมน้ำหนักความน่าเชื่อถือร่วมกับโมเดล AI ก่อนทำการตัดสินใจ:
+
+1. **ดัชนีความเปียกของเสียงไอ (Wetness Index - WI)**
+   - **แนวคิด**: ตรวจจับเสียงไอเปียกมีเสมหะ (Wet Cough) จากจำนวนยอดคลื่นพลังงานย่อย (Local Peaks) ใน Log-Energy Envelope $E(t)$ ภายใน $150\text{ ms}$ แรกหลังจากพ้นยอดหลัก (Explosive Peak)
+   - **สมการ**: $E(t) = 10 \log_{10} \left( \frac{1}{N} \sum_{n=1}^{N} x^2(t - n) \right)$
+   - **เกณฑ์ตัวเลข**:
+     - $\ge 3$ ยอด $\rightarrow$ ไอเปียกมีเสมหะ บ่งชี้ **Bronchitis** หรือ **Pneumonia**
+     - $\le 2$ ยอด $\rightarrow$ ไอแห้ง/ระคายเคือง บ่งชี้ **Healthy** หรือ **Croup**
+
+2. **อัตราส่วนพลังงานย่านความถี่ (Spectral Energy Ratio - ER)**
+   - **แนวคิด**: ตรวจจับเสียงสูดหายใจเข้าหวีด (Stridor) สำหรับโรคครูป (Croup) หรือเสียงหวีดหลอดลมตีบ (Wheezing) สำหรับหลอดลมอักเสบ (Bronchitis)
+   - **สมการ**: $ER = \frac{\int_{f_1}^{f_2} |X(f)|^2 df}{\int_{0}^{f_{\text{max}}} |X(f)|^2 df}$
+   - **เกณฑ์ตัวเลข**:
+     - **Croup Stridor Detector**: วิเคราะห์ช่วงเวลาหลังการไอเสร็จ ($t > T_{\text{cough}}$) ในย่านความถี่ $f_1 = 800\text{ Hz}$ ถึง $f_2 = 1,800\text{ Hz}$ หากมีค่า $ER > 0.40$ จะเพิ่มคะแนนคลาส Croup อย่างมีนัยสำคัญ
+     - **Bronchitis Wheezing Detector**: วิเคราะห์ย่านความถี่กลาง $f_1 = 300\text{ Hz}$ ถึง $f_2 = 800\text{ Hz}$ เพื่อหาความต่อเนื่องของเสียงโทนเดี่ยวหรือหลายโทน
+
+3. **Zero Crossing Rate (ZCR) & Spectral Centroid (SC)**
+   - **ZCR (อัตราการข้ามแกนศูนย์)**: $ZCR = \frac{1}{2(M-1)} \sum_{m=1}^{M-1} |\operatorname{sgn}[x(m+1)] - \operatorname{sgn}[x(m)]|$
+     - ค่าเฉลี่ย $0.18 - 0.35 \rightarrow$ ไอแห้ง/มีลมฟุ้ง บ่งชี้ **Healthy** หรือ **Croup**
+     - ค่าเฉลี่ย $0.05 - 0.12 \rightarrow$ ไอทุ้มต่ำ/เสียงสะเทือนของเหลว บ่งชี้ **Bronchitis** หรือ **Pneumonia**
+   - **Spectral Centroid (จุดศูนย์ถ่วงความถี่)**: $SC = \frac{\sum_{k} f_{k} \cdot |X(k)|}{\sum_{k} |X(k)|}$
+     - $SC > 2,800\text{ Hz} \rightarrow$ เสียงแหลมสว่าง/หวีดแห้ง บ่งชี้ **Croup**
+     - $SC < 2,100\text{ Hz} \rightarrow$ เสียงทุ้มทึบ/มีความชื้นสูง บ่งชี้ **Bronchitis** หรือ **Pneumonia**
+
+4. **ระยะเวลาเสียงไอรายครั้ง ($T_{\text{cough}}$)**
+   - $0.15 \le T_{\text{cough}} \le 0.3$ วินาที $\rightarrow$ บ่งชี้ **Croup**
+   - $0.2 \le T_{\text{cough}} \le 0.5$ วินาที $\rightarrow$ บ่งชี้ **Healthy**
+   - $0.5 \le T_{\text{cough}} \le 0.8$ วินาที $\rightarrow$ บ่งชี้ **Bronchitis**
 
 ## Operation Modes
 ระบบจะแบ่งรูปแบบการแจ้งเตือนและการแสดงผลเป็น 3 โหมด เพื่อให้เหมาะกับการใช้งานจริงตอนเด็กนอนและการทดลองหน้างาน
@@ -162,3 +201,19 @@
 - AI baseline ปัจจุบันยังจำแนกได้แค่ 2 คลาส (Pneumonia, Bronchitis) และยังต้องปรับปรุงความแม่นยำ
 - ข้อมูลเสียง Croup และ Healthy (ปกติ) ยังขาดแคลน ต้องใช้ Dataset เพิ่มเติมหรือทำ Data Augmentation
 - คุณภาพเสียงและเสียงรบกวนที่รับมาจาก ESP32-C3 อาจแตกต่างจาก Dataset ที่ใช้เทรน (MP3) ต้องระมัดระวังตอนทดสอบจริง
+
+## Tasks & Checklist
+- [ ] **Phase 1: Cough Filter & Detection (โพรเซสแยกไอ / ไม่ไอ)**
+  - [ ] ค้นคว้าและเขียนโค้ดคัดกรองสัญญาณเสียงเบื้องต้น เพื่อระบุว่าไฟล์เสียงเป็น "เสียงไอจริง" (เช่น ใช้โมเดล YAMNet คลาส Cough/Respiratory หรือวิเคราะห์คุณสมบัติพลังงาน RMS/Zero Crossing Rate)
+  - [ ] พัฒนา API/Endpoint หรือ Middleware ใน FastAPI สำหรับรันการตรวจสอบ "ไอ/ไม่ไอ" ก่อนเริ่มโพรเซสวิเคราะห์โรค
+  - [ ] ทดสอบความแม่นยำในการคัดกรองเสียงไอจริงเทียบกับเสียงพูด, เสียงของเล่นเด็ก และเสียงร้องไห้
+- [ ] **Phase 2: Disease Classification & Hybrid Scoring (วิเคราะห์โรคและถ่วงน้ำหนัก)**
+  - [ ] ปรับแก้โค้ดโมเดล Custom CNN (TinyCoughCnn) ใน `train_cough_cnn.py` และ `predict_cough.py` ให้รองรับ 4 คลาสโรค (Healthy, Pneumonia, Bronchitis, Croup)
+  - [ ] พัฒนาโมเดลจำแนกเสริมด้วย YAMNet Feature Extractors + Classifier (เช่น SVM/LightGBM) เพื่อทำแนวทางแบบ Pre-trained Model
+  - [ ] เขียนโค้ดสกัดคุณสมบัติเสียงทางกายภาพ (Acoustic Rules) ใน FastAPI ด้วย Librosa ตามสมการดัชนีความเปียก (WI), ความหวีด (ER/Stridor), ZCR และ Spectral Centroid
+  - [ ] พัฒนาระบบคำนวณถ่วงน้ำหนักคะแนน (Weighted Score) จากทั้ง 3 โพรเซสย่อยรวมเป็น % ส่งกลับ Client
+- [ ] **Phase 3: Integration & Client Display (การเชื่อมต่อระบบและ Checklist)**
+  - [ ] ออกแบบ API ส่งผลลัพธ์เป็น JSON และเก็บประวัติลง Supabase (รวมข้อมูล audio_id และผลลัพธ์เปอร์เซ็นต์กลุ่มโรค)
+  - [ ] พัฒนาหน้าจอ Next.js คัดกรองอาการร่วม (Checklist 4 ข้อหลัก) พร้อมรันลอจิกประเมินร่วมเพื่อเปลี่ยนระดับไฟสัญญาณ (เขียว/เหลือง/แดง)
+  - [ ] ทำส่วนแสดงภาพ Mel-Spectrogram และทางเลือกแชร์ผลให้แพทย์ผ่าน Line Notification
+
