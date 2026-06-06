@@ -16,3 +16,4 @@ server/processed_cough_data
 server/models/*.pt
 __pycache__/
 *.pyc
+server/normalize_sound_data/

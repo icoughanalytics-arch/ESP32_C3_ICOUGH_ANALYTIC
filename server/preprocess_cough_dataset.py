@@ -11,9 +11,9 @@ import soundfile as sf
 
 
 BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_RAW_DIR = BASE_DIR / "cough_sound_data"
+DEFAULT_RAW_DIR = BASE_DIR / "raw_sound_data"
 DEFAULT_OUT_DIR = BASE_DIR / "processed_cough_data"
-LABELS = ["bronchitis", "pneumonia"]
+LABELS = ["bronchitis", "croup", "normal", "pneumonia"]
 
 
 def label_from_path(path: Path) -> str:
@@ -29,7 +29,7 @@ def label_from_path(path: Path) -> str:
 
 def scan_audio(raw_dir: Path):
     files = []
-    for ext in ("*.mp3", "*.wav", "*.m4a"):
+    for ext in ("*.mp3", "*.wav", "*.m4a", "*.webm", "*.WAV", "*.MP3", "*.WEBM"):
         files.extend(raw_dir.rglob(ext))
     grouped = defaultdict(list)
     for path in sorted(files):
@@ -120,13 +120,16 @@ def main():
 
     for label in LABELS:
         files = grouped[label]
-        if len(files) <= args.test_per_class:
-            raise SystemExit(f"{label} has only {len(files)} files; cannot reserve {args.test_per_class}")
+        if len(files) == 0:
+            print(f"Warning: Class '{label}' has 0 files! Skipping...")
+            continue
+
+        actual_test_per_class = min(args.test_per_class, max(0, len(files) - 1))
 
         shuffled = files[:]
         rng.shuffle(shuffled)
-        raw_test = sorted(shuffled[: args.test_per_class])
-        train_raw = sorted(shuffled[args.test_per_class :])
+        raw_test = sorted(shuffled[: actual_test_per_class])
+        train_raw = sorted(shuffled[actual_test_per_class :])
 
         raw_test_dir = args.out_dir / "raw_test" / label
         train_dir = args.out_dir / "train_segments" / label

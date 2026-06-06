@@ -12,9 +12,9 @@ from torch.utils.data import DataLoader, Dataset
 
 
 BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_DATA_DIR = BASE_DIR / "cough_sound_data"
+DEFAULT_DATA_DIR = BASE_DIR / "normalize_sound_data"
 DEFAULT_MODEL_DIR = BASE_DIR / "models"
-LABELS = ["bronchitis", "pneumonia"]
+LABELS = ["bronchitis", "croup", "normal", "pneumonia"]
 
 
 def label_from_name(path: Path) -> str:
@@ -24,10 +24,9 @@ def label_from_name(path: Path) -> str:
             return parent_name
 
     name = path.name.lower()
-    if name.startswith("bronchitis"):
-        return "bronchitis"
-    if name.startswith("pneumonia"):
-        return "pneumonia"
+    for label in LABELS:
+        if name.startswith(label):
+            return label
     raise ValueError(f"Cannot infer label from filename: {path.name}")
 
 
@@ -50,9 +49,16 @@ def stratified_split(items, val_ratio: float, seed: int):
     train, val = [], []
     for label, group in groups.items():
         rng.shuffle(group)
-        val_count = max(1, round(len(group) * val_ratio))
-        val.extend(group[:val_count])
-        train.extend(group[val_count:])
+        if len(group) == 1:
+            # If there is only 1 file in a class, put it in both train and validation
+            train.extend(group)
+            val.extend(group)
+        else:
+            val_count = max(1, round(len(group) * val_ratio))
+            if val_count >= len(group):
+                val_count = len(group) - 1
+            val.extend(group[:val_count])
+            train.extend(group[val_count:])
 
     rng.shuffle(train)
     rng.shuffle(val)
@@ -214,7 +220,14 @@ def main():
         [sum(1 for _, label in train_items if label == class_name) for class_name in LABELS],
         dtype=torch.float32,
     )
-    class_weights = (counts.sum() / (len(LABELS) * counts)).to(device)
+    # Prevent division by zero if a class has 0 samples
+    safe_counts = torch.clamp(counts, min=1.0)
+    class_weights = (safe_counts.sum() / (len(LABELS) * safe_counts)).to(device)
+    for idx, count in enumerate(counts):
+        if count == 0:
+            class_weights[idx] = 0.0
+            print(f"Warning: Class '{LABELS[idx]}' has no training samples. Weight set to 0.0")
+
     criterion = nn.CrossEntropyLoss(weight=class_weights)
 
     best_score = -1.0
