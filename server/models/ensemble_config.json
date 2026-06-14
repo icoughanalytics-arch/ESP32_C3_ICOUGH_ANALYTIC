@@ -1,0 +1,6 @@
+{
+  "weight_cnn": 0.05,
+  "weight_hear": 0.55,
+  "weight_acoustic": 0.3999999999999999,
+  "best_val_accuracy": 0.6818181818181818
+}
