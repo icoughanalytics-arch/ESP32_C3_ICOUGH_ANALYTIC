@@ -210,13 +210,15 @@
     * **Normal / Healthy (ไอปกติ)**: ผ่านเกณฑ์คัดกรองเป็นเสียงไอจริง **100.00%**
     * **Bronchitis (หลอดลมอักเสบ)**: ผ่านเกณฑ์คัดกรองเป็นเสียงไอจริง **57 / 59 ไฟล์ (96.61%)**
     * **Pneumonia (ปอดบวม)**: ผ่านเกณฑ์คัดกรองเป็นเสียงไอจริง **77 / 83 ไฟล์ (92.77%)**
-- [ ] **Phase 2: Disease Classification & Hybrid Scoring (วิเคราะห์โรคและถ่วงน้ำหนัก)**
-  - [ ] ปรับแก้โค้ดโมเดล Custom CNN (TinyCoughCnn) ใน `train_cough_cnn.py` และ `predict_cough.py` ให้รองรับ 4 คลาสโรค (Healthy, Pneumonia, Bronchitis, Croup)
-  - [ ] พัฒนาโมเดลจำแนกเสริมด้วย YAMNet Feature Extractors + Classifier (เช่น SVM/LightGBM) เพื่อทำแนวทางแบบ Pre-trained Model
-  - [ ] เขียนโค้ดสกัดคุณสมบัติเสียงทางกายภาพ (Acoustic Rules) ใน FastAPI ด้วย Librosa ตามสมการดัชนีความเปียก (WI), ความหวีด (ER/Stridor), ZCR และ Spectral Centroid
-  - [ ] พัฒนาระบบคำนวณถ่วงน้ำหนักคะแนน (Weighted Score) จากทั้ง 3 โพรเซสย่อยรวมเป็น % ส่งกลับ Client
-- [ ] **Phase 3: Integration & Client Display (การเชื่อมต่อระบบและ Checklist)**
-  - [ ] ออกแบบ API ส่งผลลัพธ์เป็น JSON และเก็บประวัติลง Supabase (รวมข้อมูล audio_id และผลลัพธ์เปอร์เซ็นต์กลุ่มโรค)
-  - [ ] พัฒนาหน้าจอ Next.js คัดกรองอาการร่วม (Checklist 4 ข้อหลัก) พร้อมรันลอจิกประเมินร่วมเพื่อเปลี่ยนระดับไฟสัญญาณ (เขียว/เหลือง/แดง)
-  - [ ] ทำส่วนแสดงภาพ Mel-Spectrogram และทางเลือกแชร์ผลให้แพทย์ผ่าน Line Notification
+- [x] **Phase 2: Disease Classification & Hybrid Scoring (วิเคราะห์โรคและถ่วงน้ำหนัก)**
+  - [x] ปรับแก้โค้ดโมเดล Custom CNN (TinyCoughCnn) ใน `train_cough_cnn.py` ให้รองรับ 4 คลาสโรค (Healthy, Pneumonia, Bronchitis, Croup) (Validation Accuracy: 56.06% -> ทำการ Ensemble ภายหลัง)
+  - [x] พัฒนาโมเดลจำแนกเสริมด้วย Google HeAR Feature Embeddings (512 มิติ) + PyTorch MLP Classifier (Validation Accuracy: 66.67%)
+  - [x] เขียนโค้ดสกัดคุณสมบัติเสียงทางกายภาพ (Acoustic Rules) ใน `acoustic_rules.py` ด้วย Librosa และพัฒนาโมเดล SVM Classifier เพื่อจำแนก (Validation Accuracy: 57.58%)
+  - [x] พัฒนาระบบคำนวณและค้นหาน้ำหนักถ่วงคะแนน (Weighted Ensemble) ผ่าน Grid Search บันทึกค่าไว้ที่ `ensemble_config.json` (CNN=5%, HeAR=55%, Acoustic=40%) ช่วยเพิ่มประสิทธิภาพ Macro F1-Score ขึ้นมาที่ 0.77 และ Validation Accuracy ขึ้นไปแตะที่ 68.18%
+- [/] **Phase 3: Integration & Client Display (การเชื่อมต่อระบบและ Checklist)**
+  - [x] ออกแบบ API `/upload-audio` ที่มาพร้อม Cough Filter และระบบวิเคราะห์กลุ่มโรคแบบ Ensemble
+  - [x] บูรณาการระบบจัดเก็บข้อมูลลง Supabase (อัปโหลดรูป Spectrogram ไปที่ `cough-spectrum` อัปโหลดไฟล์เสียง WAV ไปที่ `cough-audio` และเขียนบันทึกประวัติลงตาราง `cough_record`)
+  - [x] บูรณาการส่ง Line Notification แจ้งเตือนผู้ปกครองอัตโนมัติเมื่อมีความเสี่ยงสูง (เชื่อมโยงลิงก์แสดงผล Next.js)
+  - [/] พัฒนาหน้าจอ Next.js คัดกรองอาการร่วม (Checklist 4 ข้อหลัก) พร้อมรันลอจิกประเมินร่วมเพื่อเปลี่ยนระดับไฟสัญญาณ (เขียว/เหลือง/แดง) (กำลังพัฒนาและทดสอบส่วนประสานหน้าเว็บ Next.js เพื่อดึงข้อมูลประวัติเสียงไอจาก Supabase)
+
 
