@@ -49,6 +49,7 @@ bool mic_read(int32_t* buf, size_t num_samples, size_t* out_samples_read) {
         portMAX_DELAY
     );
     if (err != ESP_OK) {
+        Serial.printf("[MIC] i2s_read failed: %d (0x%X)\n", err, err);
         *out_samples_read = 0;
         return false;
     }
