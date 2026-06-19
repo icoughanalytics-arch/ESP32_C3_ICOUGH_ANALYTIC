@@ -46,7 +46,7 @@ bool wifi_is_connected() {
 void wifi_upload_files() {
 }
 
-bool wifi_upload_audio_wav(const char* filename, const uint8_t* data, size_t size) {
+bool wifi_upload_audio_wav(const char* filename, const uint8_t* data, size_t size, const char* mode) {
     if (!filename || !data || size == 0) {
         Serial.println("[HTTP] Invalid upload payload");
         return false;
@@ -84,7 +84,7 @@ bool wifi_upload_audio_wav(const char* filename, const uint8_t* data, size_t siz
                   (unsigned int)size,
                   (unsigned int)tail.length());
 
-    client.printf("POST %s HTTP/1.1\r\n", SERVER_UPLOAD_PATH);
+    client.printf("POST %s?mode=%s HTTP/1.1\r\n", SERVER_UPLOAD_PATH, mode);
     client.printf("Host: %s\r\n", SERVER_HOST);
     client.println("Connection: close");
     client.printf("Content-Type: multipart/form-data; boundary=%s\r\n", boundary);
@@ -146,7 +146,7 @@ bool wifi_upload_audio_wav(const char* filename, const uint8_t* data, size_t siz
     return ok;
 }
 
-bool wifi_upload_audio_wav_from_file(const char* filepath) {
+bool wifi_upload_audio_wav_from_file(const char* filepath, const char* mode) {
     if (!filepath) {
         Serial.println("[HTTP] Invalid filepath");
         return false;
@@ -206,7 +206,7 @@ bool wifi_upload_audio_wav_from_file(const char* filepath) {
     String tail = String("\r\n--") + boundary + "--\r\n";
     size_t content_length = head.length() + size + tail.length();
 
-    client.printf("POST %s HTTP/1.1\r\n", SERVER_UPLOAD_PATH);
+    client.printf("POST %s?mode=%s HTTP/1.1\r\n", SERVER_UPLOAD_PATH, mode);
     client.printf("Host: %s\r\n", SERVER_HOST);
     client.println("Connection: close");
     client.printf("Content-Type: multipart/form-data; boundary=%s\r\n", boundary);

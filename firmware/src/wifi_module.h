@@ -19,6 +19,6 @@ void wifi_connect();
 void wifi_disconnect();
 bool wifi_is_connected();
 void wifi_upload_files();
-bool wifi_upload_audio_wav(const char* filename, const uint8_t* data, size_t size);
-bool wifi_upload_audio_wav_from_file(const char* filepath);
+bool wifi_upload_audio_wav(const char* filename, const uint8_t* data, size_t size, const char* mode = "normal");
+bool wifi_upload_audio_wav_from_file(const char* filepath, const char* mode = "normal");
 

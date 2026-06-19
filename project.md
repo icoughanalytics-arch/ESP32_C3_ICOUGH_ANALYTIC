@@ -182,10 +182,13 @@
 
 ## Current State
 - เขียนโค้ดทดสอบไมค์ (main + inmp441_module) พิมพ์ค่า RMS และ dBFS
-- ทดสอบส่งไฟล์เสียงจาก ESP32-C3 เข้า server ได้แล้ว
-- เสียงที่ส่งมาชัดระดับหนึ่ง
+- ทดสอบส่งไฟล์เสียงจาก ESP32-C3 เข้า server ได้แล้ว และเสียงที่ส่งมาชัดระดับหนึ่ง
 - ทำ AI baseline 2 คลาสด้วย PyTorch CNN + log-mel spectrogram แล้ว
 - อ่านเอกสาร `iCough Analytics 2.pdf` แล้ว พบว่าเป้าหมายระบบเต็มต้องมี 4 คลาสและมี Checklist override logic
+- เพิ่มระบบ **Test Mode** คุมด้วยปุ่มกด GPIO 3 และแสดงผลด้วย LED GPIO 20 (ทำงานแบบ Timeout 10 วิ)
+- แก้ปัญหาแรมเต็ม (OOM) ขณะอัดเสียงและส่ง HTTPS บนบอร์ด ESP32-C3 โดยบันทึกไฟล์ WAV ตรงลง LittleFS (Direct-to-Flash) และเปิดสตรีมอัปโหลด (Streaming HTTP Upload)
+- เซิร์ฟเวอร์และบอร์ดแยกการเก็บไฟล์เสียงตามโหมด (`uploads/test/` และ `uploads/normal/`)
+- บูรณาการและแก้ไข RLS Policy สำหรับ Supabase Storage (`cough-audio` และ `cough-spectrum`) สำเร็จเรียบร้อย ไฟล์รูปและเสียงอัปโหลดขึ้น Cloud ได้สำเร็จพร้อมประวัติข้อมูลใน DB
 
 ## Open Questions
 1. **การระบุค่าผ่าน URL parameters**:
@@ -217,7 +220,7 @@
   - [x] พัฒนาระบบคำนวณและค้นหาน้ำหนักถ่วงคะแนน (Weighted Ensemble) ผ่าน Grid Search บันทึกค่าไว้ที่ `ensemble_config.json` (CNN=5%, HeAR=55%, Acoustic=40%) ช่วยเพิ่มประสิทธิภาพ Macro F1-Score ขึ้นมาที่ 0.77 และ Validation Accuracy ขึ้นไปแตะที่ 68.18%
 - [/] **Phase 3: Integration & Client Display (การเชื่อมต่อระบบและ Checklist)**
   - [x] ออกแบบ API `/upload-audio` ที่มาพร้อม Cough Filter และระบบวิเคราะห์กลุ่มโรคแบบ Ensemble
-  - [x] บูรณาการระบบจัดเก็บข้อมูลลง Supabase (อัปโหลดรูป Spectrogram ไปที่ `cough-spectrum` อัปโหลดไฟล์เสียง WAV ไปที่ `cough-audio` และเขียนบันทึกประวัติลงตาราง `cough_record`)
+  - [x] บูรณาการระบบจัดเก็บข้อมูลลง Supabase (อัปโหลดรูป Spectrogram ไปที่ `cough-spectrum` อัปโหลดไฟล์เสียง WAV ไปที่ `cough-audio` และเขียนบันทึกประวัติลงตาราง `cough_record` สำเร็จและแก้ไข RLS Policy เรียบร้อย)
   - [x] บูรณาการส่ง Line Notification แจ้งเตือนผู้ปกครองอัตโนมัติเมื่อมีความเสี่ยงสูง (เชื่อมโยงลิงก์แสดงผล Next.js)
   - [/] พัฒนาหน้าจอ Next.js คัดกรองอาการร่วม (Checklist 4 ข้อหลัก) พร้อมรันลอจิกประเมินร่วมเพื่อเปลี่ยนระดับไฟสัญญาณ (เขียว/เหลือง/แดง) (กำลังพัฒนาและทดสอบส่วนประสานหน้าเว็บ Next.js เพื่อดึงข้อมูลประวัติเสียงไอจาก Supabase)
 

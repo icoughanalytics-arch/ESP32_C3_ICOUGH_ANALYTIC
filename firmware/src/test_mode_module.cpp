@@ -18,6 +18,10 @@ static unsigned long mode_start_ms    = 0;
 static uint8_t* wav_buffer        = nullptr;
 static uint32_t cough_count       = 0;
 
+// --- FreeRTOS LED Blinking Task State ---
+static TaskHandle_t blink_task_handle = NULL;
+static volatile bool keep_blinking    = false;
+
 // ============================================================
 //  WAV Header Helper
 // ============================================================
@@ -64,16 +68,32 @@ static void led_blink(int times, int on_ms, int off_ms) {
     }
 }
 
+static void led_blink_task(void* pvParameters) {
+    while (keep_blinking) {
+        digitalWrite(TEST_LED_PIN, !digitalRead(TEST_LED_PIN));
+        vTaskDelay(pdMS_TO_TICKS(100)); // Blink every 100ms
+    }
+    blink_task_handle = NULL;
+    vTaskDelete(NULL);
+}
+
+static void start_blinking() {
+    if (blink_task_handle == NULL) {
+        keep_blinking = true;
+        xTaskCreate(led_blink_task, "BlinkTask", 1024, NULL, 1, &blink_task_handle);
+    }
+}
+
+static void stop_blinking() {
+    keep_blinking = false;
+    delay(50); // Small delay to let task exit loop
+    led_off();
+}
+
 // ============================================================
 //  Enter / Exit Test Mode
 // ============================================================
 static void enter_test_mode() {
-    // กระพริบ LED 2 ครั้ง
-    led_blink(2, 150, 150);
-
-    // รอ 1 วินาที ก่อนเข้า test mode
-    delay(1000);
-
     mode_active = true;
     mode_start_ms = millis();
     cough_count = 0;
@@ -95,6 +115,9 @@ static void exit_test_mode(const char* reason) {
 static void record_and_upload() {
     Serial.printf("[TEST] Cough detected! Recording %.1f seconds directly to Flash...\n", (float)TEST_RECORD_SECONDS);
 
+    // เริ่มการกะพริบไฟ LED ในเบื้องหลังด้วย FreeRTOS Task
+    start_blinking();
+
     // ล้างบัฟเฟอร์แรมก่อนเริ่มอัด
     ram_buffer_clear();
 
@@ -103,8 +126,8 @@ static void record_and_upload() {
     File file = LittleFS.open(temp_filename, FILE_WRITE);
     if (!file) {
         Serial.println("[TEST] Error: Cannot open temp file in LittleFS for writing");
-        led_on();
-        mode_start_ms = millis();
+        stop_blinking();
+        exit_test_mode("file error");
         return;
     }
 
@@ -135,9 +158,6 @@ static void record_and_upload() {
         // เขียนลงแฟลชทันที (ใช้แรม Stack เล็กน้อย ไม่โหลดแรม Heap)
         size_t written = file.write((const uint8_t*)pcm_buf, bytes_to_write);
         total_pcm_bytes_written += written;
-
-        // กระพริบ LED ระหว่างอัด
-        digitalWrite(TEST_LED_PIN, (millis() / 100) % 2);
     }
     unsigned long rec_ms = millis() - rec_start;
 
@@ -166,15 +186,17 @@ static void record_and_upload() {
     Serial.printf("[TEST] Free Heap before SSL connection: %u bytes, Max Contiguous Block: %u bytes\n", 
                   ESP.getFreeHeap(), ESP.getMaxAllocHeap());
 
-    bool ok = wifi_upload_audio_wav_from_file(temp_filename);
+    bool ok = wifi_upload_audio_wav_from_file(temp_filename, "test");
     Serial.println(ok ? "[TEST] Upload OK" : "[TEST] Upload FAILED");
 
     // ลบไฟล์ชั่วคราวออกเพื่อคืนความจุ Flash
     flash_delete_file(temp_filename);
 
-    // รีเซ็ต timer ของ test mode หลังอัปโหลดเสร็จ
-    mode_start_ms = millis();
-    led_on();
+    // หยุดกะพริบไฟ LED เบื้องหลัง
+    stop_blinking();
+
+    // ออกจาก test mode ทันทีหลังอัปโหลดเสร็จ (หรือพัง)
+    exit_test_mode(ok ? "upload success" : "upload failed");
 }
 
 // ============================================================

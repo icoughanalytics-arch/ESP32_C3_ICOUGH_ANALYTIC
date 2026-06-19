@@ -48,6 +48,10 @@ except ImportError:
 # กำหนดค่าคงที่
 UPLOAD_DIR = BASE_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
+TEST_UPLOAD_DIR = UPLOAD_DIR / "test"
+NORMAL_UPLOAD_DIR = UPLOAD_DIR / "normal"
+TEST_UPLOAD_DIR.mkdir(exist_ok=True)
+NORMAL_UPLOAD_DIR.mkdir(exist_ok=True)
 MODEL_DIR = BASE_DIR / "models"
 LABELS = ["bronchitis", "croup", "normal", "pneumonia"]
 HF_TOKEN = "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"
@@ -477,11 +481,14 @@ def health():
 @app.post("/upload-audio")
 async def upload_audio(
     file: UploadFile = File(...),
-    device_code: str = Query("ICOUGH-REAL-MOCK-001", description="Device code or token of ESP32")
+    device_code: str = Query("ICOUGH-REAL-MOCK-001", description="Device code or token of ESP32"),
+    mode: str = Query("normal", description="Operation mode: 'normal' or 'test'")
 ):
     suffix = Path(file.filename or "audio.wav").suffix or ".wav"
     filename = f"{strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}{suffix}"
-    audio_path = UPLOAD_DIR / filename
+    
+    target_dir = TEST_UPLOAD_DIR if mode == "test" else NORMAL_UPLOAD_DIR
+    audio_path = target_dir / filename
     
     # 1. เขียนไฟล์เสียงลงเครื่องชั่วคราว
     try:
@@ -515,7 +522,7 @@ async def upload_audio(
     
     # เจนรูปภาพ Spectrogram สำหรับการแสดงผลหน้าเว็บ
     spectrogram_filename = filename.replace(suffix, ".png")
-    spectrogram_path = UPLOAD_DIR / spectrogram_filename
+    spectrogram_path = target_dir / spectrogram_filename
     try:
         make_spectrogram_image(audio_path, spectrogram_path, 16000)
     except Exception as e:
@@ -628,6 +635,7 @@ async def upload_audio(
                 data=audio_data,
                 timeout=12
             )
+            print(f"Supabase Storage (Audio) Response: {upload_audio_res.status_code} | {upload_audio_res.text}")
             
             # อัปโหลด Spectrogram รูปภาพ
             if spectrogram_path.exists():
@@ -642,6 +650,7 @@ async def upload_audio(
                     data=spectrum_data,
                     timeout=12
                 )
+                print(f"Supabase Storage (Spectrogram) Response: {upload_spec_res.status_code} | {upload_spec_res.text}")
                 
             # ค้นหา device_id ใน database
             device_id = DEFAULT_DEVICE_ID
@@ -690,9 +699,9 @@ async def upload_audio(
         except Exception as e:
             print(f"Warning: เกิดปัญหาการเชื่อมต่อกับ Supabase: {e}")
             
-    # 7. ยิงแจ้งเตือน Line Notify (ถ้าเป็น High หรือ Moderate Risk และมี Token)
-    if line_notify_token and risk_level in ("high", "moderate"):
-        print("-> กำลังส่งแจ้งเตือนทาง Line Notify...")
+    # 7. ยิงแจ้งเตือน Line Notify (ถ้าเป็น High/Moderate Risk หรือเป็นโหมด test และมี Token)
+    if line_notify_token and (risk_level in ("high", "moderate") or mode == "test"):
+        print(f"-> กำลังส่งแจ้งเตือนทาง Line Notify (โหมด: {mode})...")
         send_line_notification(line_notify_token, record_uuid, risk_level, predictions)
         
     return {
@@ -709,7 +718,10 @@ async def upload_audio(
 
 @app.get("/audio/{filename}")
 def get_audio(filename: str):
-    path = UPLOAD_DIR / filename
+    # ค้นหาในโฟลเดอร์ test ก่อน แล้วค่อยค้นใน normal
+    path = TEST_UPLOAD_DIR / filename
+    if not path.exists():
+        path = NORMAL_UPLOAD_DIR / filename
     if not path.exists():
         raise HTTPException(status_code=404, detail="ไม่พบไฟล์เสียงหรือรูปภาพ")
         
