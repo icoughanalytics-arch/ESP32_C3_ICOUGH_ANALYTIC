@@ -220,11 +220,17 @@
   - [x] พัฒนาโมเดลจำแนกเสริมด้วย Google HeAR Feature Embeddings (512 มิติ) + PyTorch MLP Classifier (Validation Accuracy: 66.67%)
   - [x] เขียนโค้ดสกัดคุณสมบัติเสียงทางกายภาพ (Acoustic Rules) ใน `acoustic_rules.py` ด้วย Librosa และพัฒนาโมเดล SVM Classifier เพื่อจำแนก (Validation Accuracy: 57.58%)
   - [x] พัฒนาระบบคำนวณและค้นหาน้ำหนักถ่วงคะแนน (Weighted Ensemble) ผ่าน Grid Search บันทึกค่าไว้ที่ `ensemble_config.json` (CNN=5%, HeAR=55%, Acoustic=40%) ช่วยเพิ่มประสิทธิภาพ Macro F1-Score ขึ้นมาที่ 0.77 และ Validation Accuracy ขึ้นไปแตะที่ 68.18%
-- [/] **Phase 3: Integration & Client Display (การเชื่อมต่อระบบและ Checklist)**
+- [x] **Phase 3: Integration & Client Display (การเชื่อมต่อระบบและ Checklist)**
   - [x] ออกแบบ API `/upload-audio` ที่มาพร้อม Cough Filter และระบบวิเคราะห์กลุ่มโรคแบบ Ensemble
   - [x] บูรณาการระบบจัดเก็บข้อมูลลง Supabase (อัปโหลดรูป Spectrogram ไปที่ `cough-spectrum` อัปโหลดไฟล์เสียง WAV ไปที่ `cough-audio` และเขียนบันทึกประวัติลงตาราง `cough_record` สำเร็จและแก้ไข RLS Policy เรียบร้อย)
-  - [x] บูรณาการส่ง Line Notification แจ้งเตือนผู้ปกครองอัตโนมัติเมื่อมีความเสี่ยงสูง (เชื่อมโยงลิงก์แสดงผล Next.js)
+  - [x] บูรณาการส่ง Line Notification แจ้งเตือนผู้ปกครองอัตโนมัติเมื่อมีความเสี่ยงสูง (เชื่อมโยงลิงก์แสดงผลไปยังเว็บแอป Vercel: `https://i-cough.vercel.app/`)
   - [x] บูรณาการการเชื่อมต่ออัปโหลด Batch ระหว่างบอร์ด (ESP32-C3) และเซิร์ฟเวอร์ (PM2 Server) แบบ HTTP ธรรมดาสำเร็จ
-  - [/] พัฒนาหน้าจอ Next.js คัดกรองอาการร่วม (Checklist 4 ข้อหลัก) พร้อมรันลอจิกประเมินร่วมเพื่อเปลี่ยนระดับไฟสัญญาณ (เขียว/เหลือง/แดง) (กำลังพัฒนาและทดสอบส่วนประสานหน้าเว็บ Next.js เพื่อดึงข้อมูลประวัติเสียงไอจาก Supabase)
+  - [x] พัฒนาหน้าจอ Next.js คัดกรองอาการร่วม (Checklist 4 ข้อหลัก) พร้อมรันลอจิกประเมินร่วมเพื่อเปลี่ยนระดับไฟสัญญาณ (เขียว/เหลือง/แดง) สำเร็จเรียบร้อย (รวมถึงการแยกแสดงผลในส่วนของ POC/Test events ผ่านการบันทึกฟิลด์ `is_poc` จาก FastAPI)
+  - [x] ตั้งค่า DNS Domain `icough.chickenkiller.com` ร่วมกับ Nginx Reverse Proxy และ SSL Certbot (Let's Encrypt) บน VPS ทำให้ระบบ LINE Webhook ทำงานได้อย่างเสถียรและปลอดภัยแบบ HTTPS
+- [/] **Phase 4: Optimization, Enclosure & Battery Testing (การทดสอบและความเสถียรฮาร์ดแวร์)**
+  - [/] พัฒนาและเพิ่มประสิทธิภาพความแม่นยำในการจำแนกประเภทการไอแต่ละแบบ (Final Cough Test & Model Accuracy Tuning)
+  - [/] ทดสอบอัตราการใช้พลังงานของแบตเตอรี่ความจุ 520mAh (Battery Life Benchmarking) เพื่อประเมินจำนวนชั่วโมงการทำงานจริง
+  - [/] ออกแบบตัวเคสประกอบ (3D Enclosure) และสั่งพิมพ์ (3D Print) ชิ้นงานด้วยเครื่องพิมพ์ Elegoo 3D Printer เพื่อความแข็งแรงปลอดภัยของอุปกรณ์
+
 
 

@@ -11,4 +11,6 @@ void flash_list_files();
 size_t flash_get_free_space();
 bool flash_is_full();
 void flash_clean_directory(const char* dirpath);
+bool flash_delete_oldest_in_dir(const char* dirpath);
+
 

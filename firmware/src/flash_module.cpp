@@ -116,3 +116,58 @@ void flash_clean_directory(const char* dirpath) {
     Serial.printf("[FLASH] Finished cleaning directory: %s\n", dirpath);
 }
 
+bool flash_delete_oldest_in_dir(const char* dirpath) {
+    File dir = LittleFS.open(dirpath);
+    if (!dir || !dir.isDirectory()) {
+        return false;
+    }
+
+    String oldest_filepath = "";
+    uint32_t oldest_time = 0xFFFFFFFF; // สูงสุดที่เป็นไปได้สำหรับ uint32_t
+
+    File file = dir.openNextFile();
+    while (file) {
+        String filepath = file.name();
+        if (!filepath.startsWith("/")) {
+            String dir_str = dirpath;
+            if (!dir_str.endsWith("/")) dir_str += "/";
+            if (dir_str.startsWith("/")) {
+                filepath = dir_str + filepath;
+            } else {
+                filepath = "/" + dir_str + filepath;
+            }
+        }
+
+        // ค้นหา timestamp จากชื่อไฟล์: n_cough_<timestamp>_<count>.wav
+        int idx = filepath.indexOf("n_cough_");
+        if (idx >= 0) {
+            String ts_part = filepath.substring(idx + 8); // ตัดเหลือเช่น "1781955856_1.wav"
+            int under_idx = ts_part.indexOf('_');
+            if (under_idx >= 0) {
+                String ts_str = ts_part.substring(0, under_idx);
+                uint32_t ts = (uint32_t)ts_str.toInt();
+                if (ts < oldest_time) {
+                    oldest_time = ts;
+                    oldest_filepath = filepath;
+                }
+            }
+        } else {
+            // ถ้าไม่ตรงกับแพทเทิร์น ให้ลบไฟล์ที่ไม่คุ้นเคยนี้ทันทีเพื่อเคลียร์พื้นที่
+            oldest_filepath = filepath;
+            file.close();
+            break;
+        }
+
+        file.close();
+        file = dir.openNextFile();
+    }
+
+    if (oldest_filepath.length() > 0) {
+        Serial.printf("[FLASH] FIFO: Deleting oldest file to free space: %s\n", oldest_filepath.c_str());
+        return LittleFS.remove(oldest_filepath);
+    }
+
+    return false;
+}
+
+

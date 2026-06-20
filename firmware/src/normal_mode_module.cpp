@@ -9,6 +9,7 @@
 #define NORMAL_PCM_BYTES       ((size_t)(SAMPLE_RATE * NORMAL_RECORD_SECONDS * sizeof(int16_t)))
 #define WAV_HEADER_BYTES       44
 #define COUGH_THRESHOLD_DB     -30.0f  // เกณฑ์ตรวจจับเสียงไอ (เท่ากับเทสโหมด)
+#define BATCH_UPLOAD_COOLDOWN_MS 60000 // คูลดาวน์ 1 นาที เพื่อกันลูปอัปโหลดถี่เกินไปกรณีต่อ WiFi ไม่ติด
 
 // --- State Variables ---
 static unsigned long last_upload_ms = 0;
@@ -74,13 +75,23 @@ static void record_normal_cough() {
     
     Serial.printf("[NORMAL] Cough detected! Recording 3s WAV to Flash: %s\n", filename);
     
-    // ตรวจสอบพื้นที่ว่างของ Flash ก่อนเขียนไฟล์ใหม่
+    // ตรวจสอบพื้นที่ว่างของ Flash ก่อนเขียนไฟล์ใหม่ (ถ้าเต็ม ให้พยายามเคลียร์พื้นที่ตามหลัก FIFO)
     if (flash_is_full()) {
-        Serial.println("[NORMAL] Flash is full! Skipping record to prevent overflow.");
-        is_recording = false;
-        // บังคับให้อัปโหลดทันทีเพื่อเคลียร์พื้นที่
-        trigger_batch_upload();
-        return;
+        Serial.println("[NORMAL] Flash is full! Applying FIFO: trying to delete oldest files...");
+        while (flash_is_full()) {
+            if (!flash_delete_oldest_in_dir("/normal")) {
+                Serial.println("[NORMAL] FIFO Failed: No more files can be deleted.");
+                break;
+            }
+        }
+        
+        // หากลบจนสุดแล้วยังเต็มอยู่ ค่อยข้ามการบันทึก
+        if (flash_is_full()) {
+            Serial.println("[NORMAL] Flash is still full! Skipping record to prevent overflow.");
+            is_recording = false;
+            trigger_batch_upload();
+            return;
+        }
     }
 
     File file = LittleFS.open(filename, FILE_WRITE);
@@ -181,10 +192,13 @@ void normal_mode_start() {
 void normal_mode_loop() {
     unsigned long now = millis();
 
-    // 1. ตรวจสอบ Timer 10 นาที หรือพื้นที่ Flash เต็ม
-    if ((now - last_upload_ms >= UPLOAD_INTERVAL_MS) || flash_is_full()) {
+    // 1. ตรวจสอบ Timer 10 นาที หรือพื้นที่ Flash เต็ม (โดยเว้นระยะคูลดาวน์กันวนลูปหากไม่มีอินเทอร์เน็ต)
+    bool time_to_upload = (now - last_upload_ms >= UPLOAD_INTERVAL_MS);
+    bool flash_full_need_upload = flash_is_full() && (now - last_upload_ms >= BATCH_UPLOAD_COOLDOWN_MS);
+
+    if (time_to_upload || flash_full_need_upload) {
         if (flash_is_full()) {
-            Serial.println("[NORMAL] Flash is full! Forcing batch upload...");
+            Serial.println("[NORMAL] Flash is full! Forcing batch upload (with cooldown check)...");
         } else {
             Serial.println("[NORMAL] 10-minute timer reached! Forcing batch upload...");
         }

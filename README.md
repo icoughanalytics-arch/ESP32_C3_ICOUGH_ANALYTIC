@@ -50,10 +50,14 @@ pio device monitor -b 115200
   - [x] เชื่อมโยงระบบจัดเก็บประวัติเสียงไอและรูป Spectrogram ลงฐานข้อมูล Supabase (DB + Storage)
   - [x] ส่งลิงก์รายงานผลการวิเคราะห์และแจ้งเตือน Line Notify ไปยังผู้ปกครองเมื่อเสี่ยงสูง
   - [x] พัฒนาระบบ Batch Upload (LittleFS Queue) และตัวตั้งค่า NVS Wi-Fi Manager (SoftAP + Captive Portal)
-- [/] **Phase 3: Web Application & Checklist**
-  - [/] พัฒนาหน้าเว็บคัดกรองร่วม Next.js แสดงสรุปรายงานผลและทำ Checklist 4 ข้อเพื่อประเมินไฟ เขียว/เหลือง/แดง (กำลังพัฒนา)
-- [ ] **Phase 4: Power Optimization**
-  - [ ] พัฒนาระบบประหยัดพลังงานของเฟิร์มแวร์ ESP32 (Deep Sleep / Light Sleep)
+- [x] **Phase 3: Web Application & Checklist**
+  - [x] พัฒนาหน้าเว็บคัดกรองร่วม Next.js แสดงสรุปรายงานผลและทำ Checklist 4 ข้อเพื่อประเมินไฟ เขียว/เหลือง/แดง สำเร็จเรียบร้อย
+  - [x] แยกจัดหมวดหมู่ POC/Test event และบันทึกข้อมูลอย่างสมบูรณ์ลง Supabase
+  - [x] ตั้งค่าความปลอดภัย HTTPS (Nginx Reverse Proxy + Certbot SSL) บนโดเมน `icough.chickenkiller.com` สำหรับการคุยกับ LINE OA
+- [/] **Phase 4: Optimization, Enclosure & Battery Testing**
+  - [/] พัฒนาและเพิ่มประสิทธิภาพความแม่นยำในการจำแนกประเภทการไอแต่ละแบบ (Final Cough Test & Model Accuracy Tuning)
+  - [/] ทดสอบอัตราการใช้พลังงานของแบตเตอรี่ความจุ 520mAh เพื่อประเมินเวลาการทำงานจริงของระบบ
+  - [/] ออกแบบตัวเคส (3D Enclosure) และสั่งพิมพ์ด้วยเครื่อง Elegoo 3D Printer เพื่อประกอบอุปกรณ์จริง
 
 
 ## License
