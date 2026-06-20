@@ -40,16 +40,19 @@ bool wifi_upload_audio_wav(const char* filename, const uint8_t* data, size_t siz
         return false;
     }
 
-    // ใช้ WiFiClientSecure สำหรับ HTTPS (ngrok)
-    WiFiClientSecure client;
-    client.setInsecure();  // skip certificate verification สำหรับ ngrok
+    WiFiClientSecure secure_client;
+    WiFiClient plain_client;
+    if (SERVER_USE_HTTPS) {
+        secure_client.setInsecure();
+    }
+    Client& client = SERVER_USE_HTTPS ? static_cast<Client&>(secure_client) : static_cast<Client&>(plain_client);
 
-    Serial.printf("[HTTP] Connecting to %s:%u%s (HTTPS)\n", SERVER_HOST, SERVER_PORT, SERVER_UPLOAD_PATH);
+    Serial.printf("[HTTP] Connecting to %s:%u%s (%s)\n", SERVER_HOST, SERVER_PORT, SERVER_UPLOAD_PATH, SERVER_USE_HTTPS ? "HTTPS" : "HTTP");
     if (!client.connect(SERVER_HOST, SERVER_PORT)) {
         Serial.println("[HTTP] Server connect failed");
         return false;
     }
-    Serial.println("[HTTP] Server connected (TLS)");
+    Serial.println("[HTTP] Server connected");
 
     const char* boundary = "----icough-boundary";
     String head =
@@ -167,17 +170,20 @@ bool wifi_upload_audio_wav_from_file(const char* filepath, const char* mode) {
         return false;
     }
 
-    // ใช้ WiFiClientSecure
-    WiFiClientSecure client;
-    client.setInsecure();  // skip certificate verification
+    WiFiClientSecure secure_client;
+    WiFiClient plain_client;
+    if (SERVER_USE_HTTPS) {
+        secure_client.setInsecure();
+    }
+    Client& client = SERVER_USE_HTTPS ? static_cast<Client&>(secure_client) : static_cast<Client&>(plain_client);
 
-    Serial.printf("[HTTP] Connecting to %s:%u%s (HTTPS)\n", SERVER_HOST, SERVER_PORT, SERVER_UPLOAD_PATH);
+    Serial.printf("[HTTP] Connecting to %s:%u%s (%s)\n", SERVER_HOST, SERVER_PORT, SERVER_UPLOAD_PATH, SERVER_USE_HTTPS ? "HTTPS" : "HTTP");
     if (!client.connect(SERVER_HOST, SERVER_PORT)) {
         Serial.println("[HTTP] Server connect failed");
         file.close();
         return false;
     }
-    Serial.println("[HTTP] Server connected (TLS)");
+    Serial.println("[HTTP] Server connected");
 
     const char* boundary = "----icough-boundary";
     String head =

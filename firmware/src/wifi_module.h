@@ -5,11 +5,11 @@
 #define WIFI_SSID "diamondwifi"
 #define WIFI_PASSWORD "12345678m"
 
-// ngrok HTTPS endpoint
-#define SERVER_HOST "d171-49-229-169-93.ngrok-free.app"
-#define SERVER_PORT 443
+// VPS IP HTTP endpoint
+#define SERVER_HOST "187.127.121.75"
+#define SERVER_PORT 8000
 #define SERVER_UPLOAD_PATH "/upload-audio"
-#define SERVER_USE_HTTPS true
+#define SERVER_USE_HTTPS false
 
 #define WIFI_CONNECT_TIMEOUT_MS 15000
 #define HTTP_RESPONSE_TIMEOUT_MS 15000
