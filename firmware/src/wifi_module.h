@@ -21,4 +21,9 @@ bool wifi_is_connected();
 void wifi_upload_files();
 bool wifi_upload_audio_wav(const char* filename, const uint8_t* data, size_t size, const char* mode = "normal");
 bool wifi_upload_audio_wav_from_file(const char* filepath, const char* mode = "normal");
+bool wifi_save_credentials(const String &ssid, const String &password);
+bool wifi_load_credentials(String &ssid, String &password);
+void wifi_connect_stored();
+bool wifi_upload_directory_batch(const char* dirpath, const char* mode);
+
 

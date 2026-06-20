@@ -54,7 +54,7 @@ TEST_UPLOAD_DIR.mkdir(exist_ok=True)
 NORMAL_UPLOAD_DIR.mkdir(exist_ok=True)
 MODEL_DIR = BASE_DIR / "models"
 LABELS = ["bronchitis", "croup", "normal", "pneumonia"]
-HF_TOKEN = "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"
+HF_TOKEN = os.getenv("HF_TOKEN", "")
 MODEL_NAME = "google/hear-pytorch"
 DEFAULT_DEVICE_ID = "22222222-2222-2222-2222-222222222222"
 
@@ -124,7 +124,7 @@ class PyTorchRegularizedMLP(nn.Module):
 # ฟังก์ชันช่วยดาวน์โหลดและดึงการตั้งค่า
 # ----------------------------------------------------
 def load_supabase_credentials():
-    global supabase_url, supabase_key, line_notify_token
+    global supabase_url, supabase_key, line_notify_token, HF_TOKEN
     # พยายามอ่านจากไฟล์ .env ของ Next.js
     env_path = BASE_DIR.parent / "web" / "i-cough" / ".env"
     supabase_url = "https://tvbtogovalfhudduqssi.supabase.co"
@@ -148,6 +148,8 @@ def load_supabase_credentials():
                             supabase_key = v
                         elif k == "LINE_NOTIFY_TOKEN":
                             line_notify_token = v
+                        elif k == "HF_TOKEN":
+                            HF_TOKEN = v
             print(f"Loaded config from .env: URL={supabase_url}, Key length={len(supabase_key)}")
         except Exception as e:
             print(f"Warning: เกิดข้อผิดพลาดในการเปิดไฟล์ .env: {e}")

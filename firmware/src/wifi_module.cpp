@@ -3,35 +3,16 @@
 #include <WiFiClientSecure.h>
 #include <FS.h>
 #include <LittleFS.h>
+#include <Preferences.h>
 
+static Preferences preferences;
 
 void wifi_init() {
     WiFi.mode(WIFI_STA);
 }
 
 void wifi_connect() {
-    if (wifi_is_connected()) return;
-    if (strlen(WIFI_SSID) == 0) {
-        Serial.println("[WIFI] WIFI_SSID is empty");
-        return;
-    }
-
-    Serial.printf("[WIFI] Connecting to %s\n", WIFI_SSID);
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
-    unsigned long start_ms = millis();
-    while (!wifi_is_connected() && millis() - start_ms < WIFI_CONNECT_TIMEOUT_MS) {
-        delay(250);
-        Serial.print(".");
-    }
-    Serial.println();
-
-    if (wifi_is_connected()) {
-        Serial.print("[WIFI] Connected IP=");
-        Serial.println(WiFi.localIP());
-    } else {
-        Serial.println("[WIFI] Connect timeout");
-    }
+    wifi_connect_stored();
 }
 
 void wifi_disconnect() {
@@ -273,4 +254,102 @@ bool wifi_upload_audio_wav_from_file(const char* filepath, const char* mode) {
     client.stop();
     return ok;
 }
+
+bool wifi_save_credentials(const String &ssid, const String &password) {
+    preferences.begin("wifi-config", false);
+    preferences.putString("ssid", ssid);
+    preferences.putString("pass", password);
+    preferences.end();
+    Serial.println("[WIFI] Credentials saved to NVS successfully");
+    return true;
+}
+
+bool wifi_load_credentials(String &ssid, String &password) {
+    preferences.begin("wifi-config", true);
+    ssid = preferences.getString("ssid", "");
+    password = preferences.getString("pass", "");
+    preferences.end();
+    return ssid.length() > 0;
+}
+
+void wifi_connect_stored() {
+    if (wifi_is_connected()) return;
+    String ssid, password;
+    if (wifi_load_credentials(ssid, password)) {
+        Serial.printf("[WIFI] Connecting to stored SSID: %s\n", ssid.c_str());
+        WiFi.begin(ssid.c_str(), password.c_str());
+    } else {
+        Serial.printf("[WIFI] No stored credentials, fallback to default SSID: %s\n", WIFI_SSID);
+        WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    }
+
+    unsigned long start_ms = millis();
+    while (!wifi_is_connected() && millis() - start_ms < WIFI_CONNECT_TIMEOUT_MS) {
+        delay(250);
+        Serial.print(".");
+    }
+    Serial.println();
+
+    if (wifi_is_connected()) {
+        Serial.print("[WIFI] Connected IP=");
+        Serial.println(WiFi.localIP());
+    } else {
+        Serial.println("[WIFI] Connection failed/timeout");
+    }
+}
+
+bool wifi_upload_directory_batch(const char* dirpath, const char* mode) {
+    Serial.printf("[HTTP] Starting batch upload from %s in mode %s\n", dirpath, mode);
+    File dir = LittleFS.open(dirpath);
+    if (!dir || !dir.isDirectory()) {
+        Serial.printf("[HTTP] Directory %s not found or empty\n", dirpath);
+        return false;
+    }
+
+    // มั่นใจว่าต่อ WiFi สำเร็จก่อนทำอะไร
+    if (!wifi_is_connected()) {
+        wifi_connect_stored();
+    }
+    if (!wifi_is_connected()) {
+        Serial.println("[HTTP] Batch upload skipped: WiFi not connected");
+        return false;
+    }
+
+    File file = dir.openNextFile();
+    size_t upload_count = 0;
+    size_t failed_count = 0;
+    while (file) {
+        String filepath = file.name();
+        // LittleFS บางบอร์ด คืนค่าเฉพาะชื่อไฟล์ย่อย บางบอร์ดคืน path เต็ม
+        // ตรวจสอบและทำให้แน่ใจว่าได้ path เต็ม
+        if (!filepath.startsWith("/")) {
+            String dir_str = dirpath;
+            if (!dir_str.endsWith("/")) dir_str += "/";
+            if (dir_str.startsWith("/")) {
+                filepath = dir_str + filepath;
+            } else {
+                filepath = "/" + dir_str + filepath;
+            }
+        }
+        
+        file.close(); // ปิดเพื่อให้อีกฟังก์ชันสามารถเปิดไฟล์นี้เพื่ออ่านและอัปโหลดได้
+        
+        Serial.printf("[HTTP] Batch: Uploading file: %s\n", filepath.c_str());
+        bool success = wifi_upload_audio_wav_from_file(filepath.c_str(), mode);
+        if (success) {
+            Serial.printf("[HTTP] Upload success. Deleting: %s\n", filepath.c_str());
+            LittleFS.remove(filepath);
+            upload_count++;
+        } else {
+            Serial.printf("[HTTP] Upload failed for %s. Keeping file.\n", filepath.c_str());
+            failed_count++;
+        }
+
+        file = dir.openNextFile();
+    }
+
+    Serial.printf("[HTTP] Batch upload finished: %u uploaded, %u failed\n", upload_count, failed_count);
+    return (failed_count == 0);
+}
+
 

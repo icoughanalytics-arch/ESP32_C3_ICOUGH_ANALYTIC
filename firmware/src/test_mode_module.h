@@ -15,3 +15,6 @@
 bool test_mode_init();
 void test_mode_loop();
 bool test_mode_is_active();
+void test_mode_start();
+void test_mode_stop();
+

@@ -122,7 +122,7 @@ static void record_and_upload() {
     ram_buffer_clear();
 
     // เปิดไฟล์ใน LittleFS สำหรับบันทึกเสียงสดลงแฟลชโดยตรง
-    const char* temp_filename = "/cough_temp.wav";
+    const char* temp_filename = "/test/cough_temp.wav";
     File file = LittleFS.open(temp_filename, FILE_WRITE);
     if (!file) {
         Serial.println("[TEST] Error: Cannot open temp file in LittleFS for writing");
@@ -222,25 +222,10 @@ bool test_mode_init() {
 }
 
 void test_mode_loop() {
-    // --- อ่านปุ่ม + debounce (Lockout Cooldown 1 วิ เพื่อความเสถียรที่สุด) ---
-    bool btn = digitalRead(TEST_BUTTON_PIN) == LOW;  // active low
-    unsigned long now = millis();
-    static bool last_btn_state = false;
-
-    if (btn && !last_btn_state) {  // ตรวจจับจังหวะที่เริ่มกดปุ่ม (Edge Detection)
-        if (now - last_press_ms > 1000) {  // ถ้าผ่านพ้นระยะ cooldown 1 วินาทีแล้ว
-            last_press_ms = now;
-            if (!mode_active) {
-                enter_test_mode();
-            } else {
-                exit_test_mode("button");
-            }
-        }
-    }
-    last_btn_state = btn;
-
     // --- ถ้าไม่ได้อยู่ใน test mode ไม่ต้องทำอะไร ---
     if (!mode_active) return;
+
+    unsigned long now = millis();
 
     // อัปเดตเวลาปัจจุบันอีกครั้ง ป้องกันการ Underflow จากการหน่วงเวลาใน enter_test_mode()
     now = millis();
@@ -283,3 +268,12 @@ void test_mode_loop() {
 bool test_mode_is_active() {
     return mode_active;
 }
+
+void test_mode_start() {
+    enter_test_mode();
+}
+
+void test_mode_stop() {
+    exit_test_mode("button");
+}
+

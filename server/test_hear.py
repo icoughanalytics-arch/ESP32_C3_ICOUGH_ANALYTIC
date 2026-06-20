@@ -6,7 +6,7 @@ import torch
 from transformers import AutoModel
 
 # ปลั๊กอิน Token ของ Hugging Face เพื่อดาวน์โหลดโมเดล
-HF_TOKEN = "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"
+HF_TOKEN = os.getenv("HF_TOKEN", "")
 
 # กำหนดโมเดลเป้าหมาย
 MODEL_NAME = "google/hear-pytorch"
