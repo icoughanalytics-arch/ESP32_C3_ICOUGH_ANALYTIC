@@ -12,7 +12,7 @@
 #define SERVER_USE_HTTPS false
 
 #define WIFI_CONNECT_TIMEOUT_MS 15000
-#define HTTP_RESPONSE_TIMEOUT_MS 15000
+#define HTTP_RESPONSE_TIMEOUT_MS 35000
 
 void wifi_init();
 void wifi_connect();

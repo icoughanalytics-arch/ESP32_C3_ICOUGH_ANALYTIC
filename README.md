@@ -24,7 +24,10 @@
 - ใช้ไฟ 3.3V
 
 ## Firmware Status
-- POC: ทดสอบไมโครโฟนและคำนวณ dBFS เบื้องต้น
+- **Active & Verified:** ระบบเฟิร์มแวร์สมบูรณ์และเสถียร
+  - บันทึกและวิเคราะห์ไฟล์เสียงไอแบบเรียลไทม์ด้วย Pre-buffer RAM + LittleFS (ปรับขนาด 2.18 MB แบบตัด OTA)
+  - รองรับ 3 โหมดผ่านปุ่มกด GPIO 3: Normal Mode (อัดเก็บลง Flash และ Batch Upload ทุก 10 นาที), Test Mode (อัดและส่งทันที 1 ไฟล์), และ WiFi Config Mode (เปิด SoftAP + Captive Portal หน้าตั้งค่าสวยงาม)
+  - เชื่อมต่อ HTTP ไปยัง VPS Server พอร์ต 8000 พร้อมกลไกความปลอดภัยในการลบไฟล์เสียงทิ้งทันทีเมื่อส่งสำเร็จ เพื่อรักษาพื้นที่บน Flash ให้ว่างเสมอ
 
 ## Getting Started
 
@@ -46,6 +49,7 @@ pio device monitor -b 115200
   - [x] ระบบจำแนกโรค 4 คลาส (CNN + Google HeAR + Acoustic ML) ด้วยเทคนิค Ensemble (ความแม่นยำ 68.18%)
   - [x] เชื่อมโยงระบบจัดเก็บประวัติเสียงไอและรูป Spectrogram ลงฐานข้อมูล Supabase (DB + Storage)
   - [x] ส่งลิงก์รายงานผลการวิเคราะห์และแจ้งเตือน Line Notify ไปยังผู้ปกครองเมื่อเสี่ยงสูง
+  - [x] พัฒนาระบบ Batch Upload (LittleFS Queue) และตัวตั้งค่า NVS Wi-Fi Manager (SoftAP + Captive Portal)
 - [/] **Phase 3: Web Application & Checklist**
   - [/] พัฒนาหน้าเว็บคัดกรองร่วม Next.js แสดงสรุปรายงานผลและทำ Checklist 4 ข้อเพื่อประเมินไฟ เขียว/เหลือง/แดง (กำลังพัฒนา)
 - [ ] **Phase 4: Power Optimization**
