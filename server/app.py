@@ -713,7 +713,7 @@ async def upload_audio(
             
     # 7. ยิงแจ้งเตือนทาง LINE Messaging API (เฉพาะ Test Mode + ทุกเช้า 6 โมง via cron)
     if mode == "test":
-        report_url = f"https://example.com/result?id={record_uuid}"
+        report_url = f"https://i-cough.vercel.app/report?id={record_uuid}"
         print(f"-> กำลังส่งแจ้งเตือนทาง LINE Messaging API (โหมด: {mode})...")
         line_bot.notify_cough_alert(device_code, record_uuid, risk_level, predictions, mode, report_url)
         

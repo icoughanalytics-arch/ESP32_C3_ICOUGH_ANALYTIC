@@ -786,7 +786,7 @@ def run_daily_summary() -> Dict:
                 top_disease=top_disease,
                 top_score=top_score,
                 period_text=period_text,
-                report_url=f"https://example.com/dashboard?device={dev_code}"
+                report_url=f"https://i-cough.vercel.app/result?device={dev_code}"
             )
 
             sent = push_to_many(user_ids, [flex])
