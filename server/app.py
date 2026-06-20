@@ -32,6 +32,8 @@ try:
     import tensorflow_hub as hub
     import csv
 except ImportError:
+    tf = None
+    hub = None
     print("Warning: ไม่พบ tensorflow หรือ tensorflow-hub อาจส่งผลกระทบต่อ Cough Filter")
 
 # ตั้งค่า Path ค้นหาโมดูลในโฟลเดอร์ server
@@ -305,25 +307,28 @@ def startup_event():
     # 2. โหลด YAMNet จาก TF Hub
     try:
         print("-> กำลังโหลดโมเดล YAMNet (Cough Filter)...")
-        YAMNet_model = hub.load('https://tfhub.dev/google/yamnet/1')
-        class_map_path = YAMNet_model.class_map_path().numpy()
-        names = []
-        with tf.io.gfile.GFile(class_map_path, 'r') as csv_file:
-            reader = csv.reader(csv_file)
-            next(reader)
-            for row in reader:
-                if len(row) >= 3:
-                    names.append(row[2])
-        YAMNet_class_names = np.array(names)
-        
-        # ค้นหา index ของกลุ่มเสียงไอและระบบทางเดินหายใจ
-        target_classes = ["Cough", "Grunt", "Throat clearing", "Sneeze", "Owl", "Hoot", "Whale vocalization"]
-        YAMNet_class_indices = {}
-        for c in target_classes:
-            idx = np.where(YAMNet_class_names == c)[0]
-            if len(idx) > 0:
-                YAMNet_class_indices[c] = idx[0]
-        print("โหลดโมเดล YAMNet สำเร็จ!")
+        if hub is not None:
+            YAMNet_model = hub.load('https://tfhub.dev/google/yamnet/1')
+            class_map_path = YAMNet_model.class_map_path().numpy()
+            names = []
+            with tf.io.gfile.GFile(class_map_path, 'r') as csv_file:
+                reader = csv.reader(csv_file)
+                next(reader)
+                for row in reader:
+                    if len(row) >= 3:
+                        names.append(row[2])
+            YAMNet_class_names = np.array(names)
+            
+            # ค้นหา index ของกลุ่มเสียงไอและระบบทางเดินหายใจ
+            target_classes = ["Cough", "Grunt", "Throat clearing", "Sneeze", "Owl", "Hoot", "Whale vocalization"]
+            YAMNet_class_indices = {}
+            for c in target_classes:
+                idx = np.where(YAMNet_class_names == c)[0]
+                if len(idx) > 0:
+                    YAMNet_class_indices[c] = idx[0]
+            print("โหลดโมเดล YAMNet สำเร็จ!")
+        else:
+            print("Warning: ข้ามการโหลด YAMNet (เนื่องจากไม่ได้ติดตั้ง tensorflow-hub)")
     except Exception as e:
         print(f"Error loading YAMNet: {e}")
         
