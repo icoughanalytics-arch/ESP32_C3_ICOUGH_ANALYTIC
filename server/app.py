@@ -689,6 +689,7 @@ async def upload_audio(
                 "bronchitis_score": float(predictions["bronchitis"]),
                 "normal_score": float(predictions["normal"]),
                 "risk_level": risk_level,
+                "is_poc": mode == "test",
                 "created_at": datetime.datetime.utcnow().isoformat()
             }
             
