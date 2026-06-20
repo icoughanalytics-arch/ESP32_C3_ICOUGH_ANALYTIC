@@ -13,7 +13,7 @@ import librosa
 import soundfile as sf
 import torch
 from torch import nn
-from fastapi import FastAPI, File, UploadFile, HTTPException, Query
+from fastapi import FastAPI, File, UploadFile, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import requests
@@ -47,6 +47,8 @@ except ImportError:
     print("Error: ไม่พบโมดูล acoustic_rules.py ในเซิร์ฟเวอร์")
     sys.exit(1)
 
+import line_bot
+
 # กำหนดค่าคงที่
 UPLOAD_DIR = BASE_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -77,7 +79,7 @@ ensemble_config = {
 }
 supabase_url = None
 supabase_key = None
-line_notify_token = None
+cron_secret = ""
 
 spec_lock = threading.Lock()
 
@@ -126,37 +128,59 @@ class PyTorchRegularizedMLP(nn.Module):
 # ฟังก์ชันช่วยดาวน์โหลดและดึงการตั้งค่า
 # ----------------------------------------------------
 def load_supabase_credentials():
-    global supabase_url, supabase_key, line_notify_token, HF_TOKEN
+    global supabase_url, supabase_key, cron_secret, HF_TOKEN
     # พยายามอ่านจากไฟล์ .env ของ Next.js
     env_path = BASE_DIR.parent / "web" / "i-cough" / ".env"
     supabase_url = "https://tvbtogovalfhudduqssi.supabase.co"
     supabase_key = "sb_publishable_NAX5cakb_GxohbsICN75pQ_9s7lBZ4z"
-    line_notify_token = None
+    line_channel_secret = ""
+    line_channel_access_token = ""
+    line_register_code = "123456"
+    cron_secret = "icough_cron_2026"
     
     if env_path.exists():
         try:
             with open(env_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith("#"):
+                for raw_line in f:
+                    raw_line = raw_line.strip()
+                    if not raw_line or raw_line.startswith("#"):
                         continue
-                    if "=" in line:
-                        k, v = line.split("=", 1)
+                    if "=" in raw_line:
+                        k, v = raw_line.split("=", 1)
                         k = k.strip()
                         v = v.strip().strip('"').strip("'")
                         if k == "NEXT_PUBLIC_SUPABASE_URL":
                             supabase_url = v
                         elif k == "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY":
                             supabase_key = v
-                        elif k == "LINE_NOTIFY_TOKEN":
-                            line_notify_token = v
                         elif k == "HF_TOKEN":
                             HF_TOKEN = v
+                        elif k == "LINE_CHANNEL_SECRET":
+                            line_channel_secret = v
+                        elif k == "LINE_CHANNEL_ACCESS_TOKEN":
+                            line_channel_access_token = v
+                        elif k == "LINE_REGISTER_CODE":
+                            line_register_code = v
+                        elif k == "CRON_SECRET":
+                            cron_secret = v
             print(f"Loaded config from .env: URL={supabase_url}, Key length={len(supabase_key)}")
         except Exception as e:
             print(f"Warning: เกิดข้อผิดพลาดในการเปิดไฟล์ .env: {e}")
     else:
         print("Warning: ไม่พบไฟล์ .env ใช้ค่า Fallback เริ่มต้น")
+    
+    # ตั้งค่า LINE Bot module
+    line_bot.configure(
+        channel_secret=line_channel_secret,
+        channel_access_token=line_channel_access_token,
+        supabase_url=supabase_url,
+        supabase_key=supabase_key,
+        register_code=line_register_code
+    )
+    if line_bot.is_configured():
+        print(f"LINE Bot configured: register_code={line_register_code}")
+    else:
+        print("Warning: LINE Bot credentials not found in .env")
 
 # ฟังก์ชันแปลง Spectrogram สำหรับ CNN
 def load_log_mel_from_array(audio: np.ndarray, sample_rate: int, duration: float, n_mels: int):
@@ -251,28 +275,8 @@ def make_spectrogram_image(audio_path: Path, image_path: Path, sample_rate: int)
         plt.savefig(image_path, bbox_inches="tight", pad_inches=0)
         plt.close()
 
-# ฟังก์ชันแจ้งเตือนทาง Line Notify
-def send_line_notification(token, record_id, risk_level, probs):
-    url = "https://notify-api.line.me/api/notify"
-    headers = {"Authorization": f"Bearer {token}"}
-    
-    # ลิงก์ตรงเพื่อดูผลผ่าน Next.js app
-    report_url = f"http://localhost:3000/result?id={record_id}"
-    
-    msg = f"\n🚨 [iCough Alert] ตรวจพบเสียงไอเสี่ยง {risk_level.upper()}\n"
-    msg += f"ผลการวิเคราะห์ AI:\n"
-    msg += f"  - ปอดบวม (Pneumonia): {probs['pneumonia']*100:.1f}%\n"
-    msg += f"  - หลอดลมอักเสบ (Bronchitis): {probs['bronchitis']*100:.1f}%\n"
-    msg += f"  - โรคครูป (Croup): {probs['croup']*100:.1f}%\n"
-    msg += f"  - ปกติ (Normal): {probs['normal']*100:.1f}%\n"
-    msg += f"กรุณาประเมินอาการเด็กเพิ่มเติมที่: {report_url}"
-    
-    try:
-        response = requests.post(url, headers=headers, data={"message": msg}, timeout=8)
-        return response.status_code == 200
-    except Exception as e:
-        print(f"Error sending Line notification: {e}")
-        return False
+# ฟังก์ชันแจ้งเตือนทาง LINE Messaging API (ผ่าน line_bot module)
+# ดูรายละเอียดใน line_bot.py
 
 # ----------------------------------------------------
 # เริ่มต้น FastAPI App
@@ -707,10 +711,11 @@ async def upload_audio(
         except Exception as e:
             print(f"Warning: เกิดปัญหาการเชื่อมต่อกับ Supabase: {e}")
             
-    # 7. ยิงแจ้งเตือน Line Notify (ถ้าเป็น High/Moderate Risk หรือเป็นโหมด test และมี Token)
-    if line_notify_token and (risk_level in ("high", "moderate") or mode == "test"):
-        print(f"-> กำลังส่งแจ้งเตือนทาง Line Notify (โหมด: {mode})...")
-        send_line_notification(line_notify_token, record_uuid, risk_level, predictions)
+    # 7. ยิงแจ้งเตือนทาง LINE Messaging API (เฉพาะ Test Mode + ทุกเช้า 6 โมง via cron)
+    if mode == "test":
+        report_url = f"https://example.com/result?id={record_uuid}"
+        print(f"-> กำลังส่งแจ้งเตือนทาง LINE Messaging API (โหมด: {mode})...")
+        line_bot.notify_cough_alert(device_code, record_uuid, risk_level, predictions, mode, report_url)
         
     return {
         "is_cough": True,
@@ -738,6 +743,48 @@ def get_audio(filename: str):
         media_type = "image/png"
         
     return FileResponse(path, media_type=media_type, filename=filename)
+
+# ----------------------------------------------------
+# LINE Webhook Endpoint
+# ----------------------------------------------------
+@app.post("/webhook/line")
+async def webhook_line(request: Request):
+    """รับ Webhook events จาก LINE Platform"""
+    body = await request.body()
+    signature = request.headers.get("X-Line-Signature", "")
+    
+    if not line_bot.verify_signature(body, signature):
+        raise HTTPException(status_code=400, detail="Invalid signature")
+    
+    data = json.loads(body)
+    events = data.get("events", [])
+    
+    if events:
+        line_bot.handle_webhook_events(events)
+    
+    return {"status": "ok"}
+
+# ----------------------------------------------------
+# Daily Summary Cron Endpoint
+# ----------------------------------------------------
+@app.get("/api/cron/daily-summary")
+def daily_summary(key: str = Query("", description="API key for cron authentication")):
+    """Endpoint สำหรับ crontab เรียกทุกเช้า 06:00 น. เพื่อส่งสรุปรายวัน"""
+    if cron_secret and key != cron_secret:
+        raise HTTPException(status_code=403, detail="Invalid cron key")
+    
+    print("\n" + "=" * 40)
+    print("☀️ เริ่มต้นสร้างสรุปรายวัน...")
+    print("=" * 40)
+    
+    results = line_bot.run_daily_summary()
+    
+    print(f"สรุป: {results['devices_processed']} devices, "
+          f"{results['messages_sent']} messages sent")
+    if results.get("errors"):
+        print(f"Errors: {results['errors']}")
+    
+    return results
 
 if __name__ == "__main__":
     import uvicorn
