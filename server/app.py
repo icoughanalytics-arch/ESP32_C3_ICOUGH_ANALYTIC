@@ -335,6 +335,7 @@ def startup_event():
     # 3. โหลด Google HeAR จาก Hugging Face
     try:
         print(f"-> กำลังโหลดโมเดล Google HeAR ({MODEL_NAME}) จาก Hugging Face (ขั้นตอนนี้อาจใช้เวลา)...")
+        print(f"   [DEBUG] HF_TOKEN length: {len(HF_TOKEN)}, starts with: '{HF_TOKEN[:8]}'")
         from transformers import AutoModel
         HeAR_model = AutoModel.from_pretrained(MODEL_NAME, token=HF_TOKEN, trust_remote_code=True)
         HeAR_model = HeAR_model.to(device)
