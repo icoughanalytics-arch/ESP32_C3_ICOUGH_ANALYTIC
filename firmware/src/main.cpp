@@ -91,10 +91,9 @@ void setup() {
         while (true) { delay(1000); }
     }
 
-    // เริ่มต้นเชื่อมต่อ WiFi เบื้องหลัง (NVS หรือ Hardcoded)
+    // เริ่มต้น Wi-Fi แบบยังไม่เชื่อมต่อ (จะเชื่อมต่อเฉพาะเมื่อต้องส่งข้อมูลเท่านั้นเพื่อประหยัดแบต)
     wifi_init();
-    Serial.println("[WIFI] Auto connecting to saved/default WiFi in background...");
-    wifi_connect_stored(); 
+    Serial.println("[WIFI] Initialized. Keeping WiFi OFF to save battery.");
 
     // สตาร์ทใน Normal Mode ทันที
     current_state = STATE_NORMAL;

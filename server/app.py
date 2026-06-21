@@ -8,6 +8,40 @@ import threading
 from pathlib import Path
 from time import strftime
 
+# --- Override sys.stdout / sys.stderr for adding Thai timestamps ---
+class TimestampedStream:
+    def __init__(self, stream):
+        self.stream = stream
+        self.need_timestamp = True
+
+    def write(self, data):
+        if not data:
+            return
+        tz_th = datetime.timezone(datetime.timedelta(hours=7))
+        lines = data.split('\n')
+        for i, line in enumerate(lines):
+            if i > 0:
+                self.stream.write('\n')
+                self.need_timestamp = True
+            if line:
+                if self.need_timestamp:
+                    now_th = datetime.datetime.now(tz_th)
+                    ts = now_th.strftime("[%Y-%m-%d %H:%M:%S+07:00] ")
+                    self.stream.write(ts + line)
+                    self.need_timestamp = False
+                else:
+                    self.stream.write(line)
+
+    def flush(self):
+        try:
+            self.stream.flush()
+        except AttributeError:
+            pass
+
+sys.stdout = TimestampedStream(sys.stdout)
+sys.stderr = TimestampedStream(sys.stderr)
+
+
 import numpy as np
 import librosa
 import soundfile as sf

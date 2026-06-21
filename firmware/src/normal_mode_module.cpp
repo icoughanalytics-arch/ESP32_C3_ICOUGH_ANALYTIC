@@ -192,16 +192,9 @@ void normal_mode_start() {
 void normal_mode_loop() {
     unsigned long now = millis();
 
-    // 1. ตรวจสอบ Timer 10 นาที หรือพื้นที่ Flash เต็ม (โดยเว้นระยะคูลดาวน์กันวนลูปหากไม่มีอินเทอร์เน็ต)
-    bool time_to_upload = (now - last_upload_ms >= UPLOAD_INTERVAL_MS);
-    bool flash_full_need_upload = flash_is_full() && (now - last_upload_ms >= BATCH_UPLOAD_COOLDOWN_MS);
-
-    if (time_to_upload || flash_full_need_upload) {
-        if (flash_is_full()) {
-            Serial.println("[NORMAL] Flash is full! Forcing batch upload (with cooldown check)...");
-        } else {
-            Serial.println("[NORMAL] 10-minute timer reached! Forcing batch upload...");
-        }
+    // 1. ตรวจสอบ Timer 10 นาที เพื่ออัปโหลด (ถ้า Flash เต็มจะใช้ระบบ FIFO เคลียร์อัตโนมัติระหว่างอัดเสียงโดยไม่พยายามต่อ WiFi)
+    if (now - last_upload_ms >= UPLOAD_INTERVAL_MS) {
+        Serial.println("[NORMAL] 10-minute timer reached! Triggering batch upload check...");
         trigger_batch_upload();
         // ดึงเวลาใหม่เพื่อความแม่นยำ
         now = millis();

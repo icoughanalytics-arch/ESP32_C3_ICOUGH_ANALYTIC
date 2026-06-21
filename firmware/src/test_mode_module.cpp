@@ -189,6 +189,9 @@ static void record_and_upload() {
     bool ok = wifi_upload_audio_wav_from_file(temp_filename, "test");
     Serial.println(ok ? "[TEST] Upload OK" : "[TEST] Upload FAILED");
 
+    // ปิดการเชื่อมต่อและปิด Wi-Fi วิทยุทันทีหลังส่งเพื่อประหยัดแบต
+    wifi_disconnect();
+
     // ลบไฟล์ชั่วคราวออกเพื่อคืนความจุ Flash
     flash_delete_file(temp_filename);
 

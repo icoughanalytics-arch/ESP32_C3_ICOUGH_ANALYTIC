@@ -305,19 +305,33 @@ void wifi_connect_stored() {
 }
 
 bool wifi_upload_directory_batch(const char* dirpath, const char* mode) {
-    Serial.printf("[HTTP] Starting batch upload from %s in mode %s\n", dirpath, mode);
+    Serial.printf("[HTTP] Checking directory %s for files before batch upload...\n", dirpath);
     File dir = LittleFS.open(dirpath);
     if (!dir || !dir.isDirectory()) {
         Serial.printf("[HTTP] Directory %s not found or empty\n", dirpath);
         return false;
     }
 
-    // มั่นใจว่าต่อ WiFi สำเร็จก่อนทำอะไร
+    // เช็คว่ามีไฟล์ข้างในจริงหรือไม่ก่อนเชื่อมต่อไวไฟเพื่อประหยัดพลังงาน
+    File first_file = dir.openNextFile();
+    if (!first_file) {
+        Serial.println("[HTTP] Directory is empty. No files to upload. Keeping WiFi OFF.");
+        dir.close();
+        return false;
+    }
+    first_file.close();
+
+    // ปิดและเปิดไดเรกทอรีใหม่เพื่อให้พร้อมอ่านจากไฟล์แรก
+    dir.close();
+    dir = LittleFS.open(dirpath);
+
+    // มีไฟล์พร้อมส่ง -> เริ่มการต่อ WiFi
     if (!wifi_is_connected()) {
         wifi_connect_stored();
     }
     if (!wifi_is_connected()) {
         Serial.println("[HTTP] Batch upload skipped: WiFi not connected");
+        dir.close();
         return false;
     }
 
@@ -326,8 +340,6 @@ bool wifi_upload_directory_batch(const char* dirpath, const char* mode) {
     size_t failed_count = 0;
     while (file) {
         String filepath = file.name();
-        // LittleFS บางบอร์ด คืนค่าเฉพาะชื่อไฟล์ย่อย บางบอร์ดคืน path เต็ม
-        // ตรวจสอบและทำให้แน่ใจว่าได้ path เต็ม
         if (!filepath.startsWith("/")) {
             String dir_str = dirpath;
             if (!dir_str.endsWith("/")) dir_str += "/";
@@ -353,6 +365,10 @@ bool wifi_upload_directory_batch(const char* dirpath, const char* mode) {
 
         file = dir.openNextFile();
     }
+    dir.close();
+
+    // ส่งชุดข้อมูลเสร็จแล้ว ทำการตัดการเชื่อมต่อและปิดไวไฟทันทีเพื่อประหยัดพลังงาน
+    wifi_disconnect();
 
     Serial.printf("[HTTP] Batch upload finished: %u uploaded, %u failed\n", upload_count, failed_count);
     return (failed_count == 0);
