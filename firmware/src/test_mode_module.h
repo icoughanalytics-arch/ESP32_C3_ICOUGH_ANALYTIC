@@ -9,7 +9,7 @@
 // --- Test Mode Config ---
 #define TEST_MODE_TIMEOUT_MS    10000   // ออกจาก test mode อัตโนมัติหลัง 10 วินาที
 #define TEST_DEBOUNCE_MS        200     // debounce สำหรับปุ่มกด
-#define COUGH_THRESHOLD_DB      -30.0f  // dBFS ที่ถือว่าเสียงดังพอจะเป็นเสียงไอ
+#define COUGH_THRESHOLD_DB      -35.0f  // dBFS ที่ถือว่าเสียงดังพอจะเป็นเสียงไอ (เพิ่มความไวสำหรับเสียงเบา)
 #define TEST_RECORD_SECONDS     3       // ระยะเวลาอัดเสียง 3 วินาที
 
 bool test_mode_init();

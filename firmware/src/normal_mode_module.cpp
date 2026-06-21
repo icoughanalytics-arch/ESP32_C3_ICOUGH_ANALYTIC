@@ -3,12 +3,13 @@
 #include "ram_buffer_module.h"
 #include "wifi_module.h"
 #include "flash_module.h"
+#include "cough_filter_module.h"
 
 // --- WAV constants ---
 #define NORMAL_RECORD_SECONDS  3
 #define NORMAL_PCM_BYTES       ((size_t)(SAMPLE_RATE * NORMAL_RECORD_SECONDS * sizeof(int16_t)))
 #define WAV_HEADER_BYTES       44
-#define COUGH_THRESHOLD_DB     -30.0f  // เกณฑ์ตรวจจับเสียงไอ (เท่ากับเทสโหมด)
+#define COUGH_THRESHOLD_DB     -35.0f  // เกณฑ์ตรวจจับเสียงไอ (เพิ่มความไวสำหรับเสียงเบา)
 #define BATCH_UPLOAD_COOLDOWN_MS 60000 // คูลดาวน์ 1 นาที เพื่อกันลูปอัปโหลดถี่เกินไปกรณีต่อ WiFi ไม่ติด
 
 // --- State Variables ---
@@ -222,8 +223,14 @@ void normal_mode_loop() {
 
     // ตรวจจับเสียงไอ
     if (db > COUGH_THRESHOLD_DB) {
-        Serial.printf("[NORMAL] Loud sound detected: dBFS=%.1f\n", db);
-        record_normal_cough();
+        // ใช้ตัวกรอง ZCR คัดกรองเสียงเบื้องต้นก่อน
+        if (cough_filter_validate(pcm_buf, samples_read, db)) {
+            Serial.printf("[NORMAL] Sound passed cough filter! Starting record.\n");
+            record_normal_cough();
+        } else {
+            // หากเป็นเสียงรบกวนทั่วไป ให้ล้างแรมบัฟเฟอร์ เพื่อเตรียมรับเสียงถัดไป
+            ram_buffer_clear();
+        }
     }
 }
 
