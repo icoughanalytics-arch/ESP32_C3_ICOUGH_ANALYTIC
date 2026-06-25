@@ -195,25 +195,32 @@ def get_all_devices_with_users() -> List[Dict]:
 
 
 def get_overnight_records(device_id: str) -> List[Dict]:
-    """ดึงประวัติเสียงไอของเมื่อคืน (20:00 เมื่อวาน - 06:00 วันนี้ เวลาไทย)"""
+    """ดึงประวัติเสียงไอของเมื่อคืน (ย้อนหลัง 24 ชั่วโมง จนถึง 06:00 วันนี้ เวลาไทย)"""
     tz_th = datetime.timezone(datetime.timedelta(hours=7))
     now_th = datetime.datetime.now(tz_th)
     today_6am = now_th.replace(hour=6, minute=0, second=0, microsecond=0)
-    yesterday_8pm = today_6am - datetime.timedelta(hours=10)
+    yesterday_6am = today_6am - datetime.timedelta(hours=24)
 
-    start_utc = yesterday_8pm.astimezone(datetime.timezone.utc).isoformat()
+    start_utc = yesterday_6am.astimezone(datetime.timezone.utc).isoformat()
     end_utc = today_6am.astimezone(datetime.timezone.utc).isoformat()
+
+    # ใช้ params เพื่อป้องกันปัญหาเครื่องหมาย '+' ใน URL
+    params = [
+        ("device_id", f"eq.{device_id}"),
+        ("created_at", f"gte.{start_utc}"),
+        ("created_at", f"lt.{end_utc}"),
+        ("order", "created_at.asc")
+    ]
 
     try:
         res = requests.get(
-            f"{SUPABASE_URL}/rest/v1/cough_record"
-            f"?device_id=eq.{device_id}"
-            f"&created_at=gte.{start_utc}"
-            f"&created_at=lt.{end_utc}"
-            f"&order=created_at.asc",
+            f"{SUPABASE_URL}/rest/v1/cough_record",
+            params=params,
             headers=_sb_headers(),
             timeout=10
         )
+        if res.status_code != 200:
+            print(f"[LINE] Get records error status {res.status_code}: {res.text}")
         return res.json() if res.status_code == 200 else []
     except Exception as e:
         print(f"[LINE] Get records exception: {e}")
@@ -748,8 +755,8 @@ def run_daily_summary() -> Dict:
 
     now_th = _thai_now()
     today_6am = now_th.replace(hour=6, minute=0, second=0, microsecond=0)
-    yesterday_8pm = today_6am - datetime.timedelta(hours=10)
-    period_text = (f"{yesterday_8pm.strftime('%d/%m %H:%M')} - "
+    yesterday_6am = today_6am - datetime.timedelta(hours=24)
+    period_text = (f"{yesterday_6am.strftime('%d/%m %H:%M')} - "
                    f"{today_6am.strftime('%d/%m %H:%M น.')}")
 
     risk_priority = {"high": 3, "moderate": 2, "low": 1}
