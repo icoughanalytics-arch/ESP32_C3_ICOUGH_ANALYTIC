@@ -27,6 +27,8 @@
 | I2S WS/LRCK | 5 | INMP441 | Output | Word Select |
 | I2S DATA | 6 | INMP441 | Input | Data In |
 | L/R | GND | INMP441 | - | เลือก Left channel |
+| Button | 3 | Switch | Input | Test Button (Active Low) |
+| LED | 10 | LED | Output | Test/Status LED |
 
 ## Electrical / Safety Notes
 - ขา L/R ของไมค์ต้องต่อ GND

@@ -4,7 +4,7 @@
 
 // --- Pin Definitions ---
 #define TEST_BUTTON_PIN   3     // ปุ่มกด active low (เปลี่ยนเป็น GPIO 3 เลี่ยงสัญญาณรบกวน)
-#define TEST_LED_PIN      20    // LED แสดงสถานะ test mode
+#define TEST_LED_PIN      10    // LED แสดงสถานะ test mode
 
 // --- Test Mode Config ---
 #define TEST_MODE_TIMEOUT_MS    10000   // ออกจาก test mode อัตโนมัติหลัง 10 วินาที
