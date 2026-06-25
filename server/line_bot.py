@@ -194,12 +194,16 @@ def get_all_devices_with_users() -> List[Dict]:
         return []
 
 
-def get_overnight_records(device_id: str) -> List[Dict]:
-    """ดึงประวัติเสียงไอของเมื่อคืน (ย้อนหลัง 24 ชั่วโมง จนถึง 06:00 วันนี้ เวลาไทย)"""
+def get_overnight_records(device_id: str, from_now: bool = False) -> List[Dict]:
+    """ดึงประวัติเสียงไอของเมื่อคืน (ย้อนหลัง 24 ชั่วโมง จนถึง 06:00 วันนี้ หรือ ณ ปัจจุบัน)"""
     tz_th = datetime.timezone(datetime.timedelta(hours=7))
     now_th = datetime.datetime.now(tz_th)
-    today_6am = now_th.replace(hour=6, minute=0, second=0, microsecond=0)
-    yesterday_6am = today_6am - datetime.timedelta(hours=24)
+    if from_now:
+        today_6am = now_th
+        yesterday_6am = today_6am - datetime.timedelta(hours=24)
+    else:
+        today_6am = now_th.replace(hour=6, minute=0, second=0, microsecond=0)
+        yesterday_6am = today_6am - datetime.timedelta(hours=24)
 
     start_utc = yesterday_6am.astimezone(datetime.timezone.utc).isoformat()
     end_utc = today_6am.astimezone(datetime.timezone.utc).isoformat()
@@ -745,7 +749,7 @@ def notify_cough_alert(device_code: str, record_id: str,
     return sent
 
 
-def run_daily_summary() -> Dict:
+def run_daily_summary(from_now: bool = False) -> Dict:
     """รันสรุปรายวัน: ดึงข้อมูลไอเมื่อคืนแล้วส่ง Flex Message ไปหาทุกคน"""
     if not is_configured():
         return {"error": "LINE bot not configured"}
@@ -754,8 +758,13 @@ def run_daily_summary() -> Dict:
     results = {"devices_processed": 0, "messages_sent": 0, "errors": []}
 
     now_th = _thai_now()
-    today_6am = now_th.replace(hour=6, minute=0, second=0, microsecond=0)
-    yesterday_6am = today_6am - datetime.timedelta(hours=24)
+    if from_now:
+        today_6am = now_th
+        yesterday_6am = today_6am - datetime.timedelta(hours=24)
+    else:
+        today_6am = now_th.replace(hour=6, minute=0, second=0, microsecond=0)
+        yesterday_6am = today_6am - datetime.timedelta(hours=24)
+        
     period_text = (f"{yesterday_6am.strftime('%d/%m %H:%M')} - "
                    f"{today_6am.strftime('%d/%m %H:%M น.')}")
 
@@ -770,7 +779,7 @@ def run_daily_summary() -> Dict:
             continue
 
         try:
-            records = get_overnight_records(dev_id)
+            records = get_overnight_records(dev_id, from_now=from_now)
             total = len(records)
             highest_risk = "low"
             top_disease = "normal"

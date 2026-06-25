@@ -803,16 +803,19 @@ async def webhook_line(request: Request):
 # Daily Summary Cron Endpoint
 # ----------------------------------------------------
 @app.get("/api/cron/daily-summary")
-def daily_summary(key: str = Query("", description="API key for cron authentication")):
+def daily_summary(
+    key: str = Query("", description="API key for cron authentication"),
+    from_now: bool = Query(False, description="Query 24h from now instead of 6am")
+):
     """Endpoint สำหรับ crontab เรียกทุกเช้า 06:00 น. เพื่อส่งสรุปรายวัน"""
     if cron_secret and key != cron_secret:
         raise HTTPException(status_code=403, detail="Invalid cron key")
     
     print("\n" + "=" * 40)
-    print("☀️ เริ่มต้นสร้างสรุปรายวัน...")
+    print(f"☀️ เริ่มต้นสร้างสรุปรายวัน... (from_now={from_now})")
     print("=" * 40)
     
-    results = line_bot.run_daily_summary()
+    results = line_bot.run_daily_summary(from_now=from_now)
     
     print(f"สรุป: {results['devices_processed']} devices, "
           f"{results['messages_sent']} messages sent")
