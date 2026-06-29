@@ -11,7 +11,7 @@
 
 // --- Pin Definitions ---
 #define I2S_PORT        I2S_NUM_0
-#define I2S_BCLK_PIN    4
+#define I2S_BCLK_PIN    7
 #define I2S_WS_PIN      5
 #define I2S_DATA_PIN    6
 

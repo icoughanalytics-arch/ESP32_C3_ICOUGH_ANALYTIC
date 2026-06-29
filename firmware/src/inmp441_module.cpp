@@ -103,6 +103,11 @@ void mic_test_loop() {
     // แสดงผล: จำนวน sample, RMS, dBFS
     Serial.printf("samples=%4u  RMS=%8.1f  dBFS=%6.1f", samples_read, rms, db);
 
+    // พิมพ์ค่าดิบ 5 ตัวแรกเพื่อวิเคราะห์บิต (Raw values)
+    if (samples_read >= 5) {
+        Serial.printf("  [Raw: %d, %d, %d, %d, %d]", audio_buf[0], audio_buf[1], audio_buf[2], audio_buf[3], audio_buf[4]);
+    }
+
     // Bar meter แสดง relative loudness (0 ถึง 40 ช่อง)
     int bar_len = (int)((db + 80.0f) * 40.0f / 60.0f);
     if (bar_len < 0)  bar_len = 0;

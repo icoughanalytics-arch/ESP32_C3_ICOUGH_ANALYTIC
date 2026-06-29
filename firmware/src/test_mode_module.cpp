@@ -258,7 +258,11 @@ void test_mode_loop() {
     static unsigned long last_print_ms = 0;
     if (now - last_print_ms > 300) {
         last_print_ms = now;
-        Serial.printf("[TEST] Mic level: %.1f dBFS\n", db);
+        Serial.printf("[TEST] Mic level: %.1f dBFS", db);
+        if (samples_read >= 5) {
+            Serial.printf("  [Raw: %d, %d, %d, %d, %d]", raw_buf[0], raw_buf[1], raw_buf[2], raw_buf[3], raw_buf[4]);
+        }
+        Serial.println();
     }
 
     // --- ตรวจจับเสียงไอ ---
